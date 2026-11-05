@@ -37,7 +37,6 @@
   a{color:var(--accent2)}
   button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; font-family: inherit; }
 
-  /* ---------- TOPBAR ---------- */
   #topbar{
     position:sticky; top:0; z-index:50;
     display:flex; align-items:center; gap:14px; flex-wrap:wrap;
@@ -321,20 +320,26 @@
   .timer.warn{color:var(--red); animation:pulse 0.5s infinite}
   .score-big{font-size:3rem; font-weight:800; color:var(--accent); margin:14px 0}
 
-  /* MOBILE OPTIMIZATIONS */
+  /* Pulse pour le bouton de test audio */
+  @keyframes ttsPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(124, 92, 255, 0.4); }
+    50%      { box-shadow: 0 0 0 6px rgba(124, 92, 255, 0); }
+  }
+  #test-audio-btn:not(.off){ animation: ttsPulse 2.5s infinite; }
+
   @media (max-width: 768px){
     #topbar{
       padding: 10px 14px;
       padding-top: calc(10px + var(--safe-top));
       padding-left: calc(14px + var(--safe-left));
       padding-right: calc(14px + var(--safe-right));
-      gap: 10px;
+      gap: 8px;
     }
     .logo{font-size:1rem}
     .stat{font-size:.82rem}
     .stat .val{font-size:.85rem}
     .btn-reset{padding:6px 10px; font-size:.72rem; min-height:40px}
-    .btn-icon{padding:6px 10px; min-height:40px; min-width:40px}
+    .btn-icon{padding:6px 10px; min-height:40px; min-width:40px; font-size:.95rem}
     .xpwrap{order: 10; width: 100%; max-width: 100%; margin-left: 0; margin-top: 2px;}
     .xpmeta{font-size:.7rem}
     .xpbar{height:6px}
@@ -457,6 +462,7 @@
     <div class="xpmeta"><span id="xp-lvl-label">Niveau 1</span><span id="xp-next-label">0 / 100</span></div>
     <div class="xpbar"><div class="xpfill" id="xp-fill"></div></div>
   </div>
+  <button class="btn-icon" id="test-audio-btn" onclick="testAudio()" title="Tester le son">🔔</button>
   <button class="btn-icon" id="tts-btn" onclick="toggleTTS()" title="Activer / désactiver la voix">🔊</button>
   <button class="btn-reset" onclick="resetProgress()">Reset</button>
 </header>
@@ -903,57 +909,154 @@ function levelInfo(){
 }
 
 /* =========================================================
-   6. TTS
+   6. TTS — VERSION MOBILE-ROBUSTE
    ========================================================= */
-let ttsVoice = null, ttsUnlocked = false;
+let ttsVoice = null;
+let ttsUnlocked = false;
+let ttsLastError = null;
+
 function initTTS(){
-  if(!('speechSynthesis' in window)) return;
-  const refresh = ()=>{
+  if(!('speechSynthesis' in window)){
+    ttsLastError = 'speechSynthesis non supporté';
+    console.warn('TTS: speechSynthesis not available');
+    return;
+  }
+
+  const loadVoices = () => {
     const voices = window.speechSynthesis.getVoices();
-    if(voices.length > 0)
-      ttsVoice = voices.find(v=>v.lang.startsWith('fr')) || voices[0];
+    if(voices.length === 0) return;
+    ttsVoice = voices.find(v => v.lang === 'fr-FR')
+            || voices.find(v => v.lang.startsWith('fr'))
+            || null;
+    if(!ttsVoice){
+      ttsLastError = 'Aucune voix française installée';
+      console.warn('TTS: no French voice. Available:', voices.map(v => v.lang));
+    } else {
+      console.log('TTS: voix chargée →', ttsVoice.name, ttsVoice.lang);
+    }
   };
-  refresh();
-  window.speechSynthesis.onvoiceschanged = refresh;
+
+  loadVoices();
+  if('onvoiceschanged' in window.speechSynthesis){
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+
+  // Déverrouillage silencieux au tout premier geste utilisateur
+  const unlock = () => {
+    if(ttsUnlocked) return;
+    try {
+      const u = new SpeechSynthesisUtterance('.');
+      u.volume = 0.01;
+      u.rate = 10;
+      u.pitch = 1;
+      u.lang = 'fr-FR';
+      if(ttsVoice) u.voice = ttsVoice;
+      window.speechSynthesis.speak(u);
+      ttsUnlocked = true;
+      console.log('TTS: unlocked ✓');
+    } catch(e){
+      console.error('TTS unlock failed:', e);
+    }
+  };
+
+  ['click','touchstart','touchend','pointerdown','keydown'].forEach(evt => {
+    document.addEventListener(evt, unlock, { once: true, passive: true });
+  });
+
+  // iOS : reprend après verrouillage écran
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden && 'speechSynthesis' in window){
+      try { window.speechSynthesis.resume(); } catch(e){}
+    }
+  });
 }
-function unlockTTS(){
-  if(!('speechSynthesis' in window) || ttsUnlocked) return;
-  try{
-    const u = new SpeechSynthesisUtterance(' ');
-    u.volume = 0;
-    window.speechSynthesis.speak(u);
-    ttsUnlocked = true;
-  }catch(e){}
-}
-function speak(text, opts={}){
+
+// No-op pour compatibilité (le vrai unlock est géré dans initTTS)
+function unlockTTS(){ /* géré globalement */ }
+
+function speak(text, opts = {}){
   if(!state.tts) return;
   if(!('speechSynthesis' in window)) return;
-  try{
-    window.speechSynthesis.cancel();
-    const clean = String(text).replace(/<[^>]+>/g,' ').replace(/&[a-z]+;/gi,' ').replace(/\s+/g,' ').trim();
-    if(!clean) return;
-    const u = new SpeechSynthesisUtterance(clean);
-    u.lang = 'fr-FR';
-    u.rate = opts.rate || 1;
-    u.pitch = 1;
-    if(ttsVoice) u.voice = ttsVoice;
-    window.speechSynthesis.speak(u);
-  }catch(e){}
+
+  const clean = String(text)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if(!clean) return;
+
+  try {
+    if(window.speechSynthesis.speaking || window.speechSynthesis.pending){
+      window.speechSynthesis.cancel();
+    }
+
+    const doSpeak = () => {
+      try {
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = 'fr-FR';
+        u.rate = opts.rate || 1;
+        u.pitch = 1;
+        u.volume = 1;
+        if(ttsVoice) u.voice = ttsVoice;
+
+        u.onerror = (e) => {
+          console.warn('TTS error:', e.error);
+          if(e.error === 'not-allowed'){
+            ttsUnlocked = false;
+            // Réarme le déverrouillage au prochain geste
+            ['click','touchstart','pointerdown'].forEach(evt => {
+              document.addEventListener(evt, function rearm(){
+                try {
+                  const dummy = new SpeechSynthesisUtterance('.');
+                  dummy.volume = 0.01;
+                  window.speechSynthesis.speak(dummy);
+                  ttsUnlocked = true;
+                } catch(err){}
+              }, { once: true, passive: true });
+            });
+            toast('🔇 Touche l\'écran pour activer le son');
+          } else if(e.error === 'voice-unavailable' || e.error === 'language-unavailable'){
+            const retry = new SpeechSynthesisUtterance(clean);
+            retry.lang = 'fr-FR';
+            retry.rate = opts.rate || 1;
+            window.speechSynthesis.speak(retry);
+          }
+        };
+
+        window.speechSynthesis.resume();
+        window.speechSynthesis.speak(u);
+      } catch(e){
+        console.error('TTS speak failed:', e);
+      }
+    };
+
+    if(!ttsUnlocked){
+      doSpeak();
+      ttsUnlocked = true;
+    } else {
+      setTimeout(doSpeak, 60);
+    }
+  } catch(e){
+    console.error('TTS error:', e);
+  }
 }
+
 function toggleTTS(){
   state.tts = !state.tts;
-  if(!state.tts) window.speechSynthesis.cancel();
+  if(!state.tts && 'speechSynthesis' in window) window.speechSynthesis.cancel();
   saveState();
   updateTTSBtn();
   toast(state.tts ? '🔊 Voix activée' : '🔇 Voix désactivée');
+  if(state.tts) testAudio();
 }
+
 function updateTTSBtn(){
   const b = document.getElementById('tts-btn');
   if(b){ b.textContent = state.tts ? '🔊' : '🔇'; b.classList.toggle('off', !state.tts); }
 }
+
 function speakEl(sel){
   if(!state.tts){ toast('🔇 Voix désactivée — clique sur 🔊 en haut'); return; }
-  unlockTTS();
   const el = document.querySelector(sel);
   if(!el) return;
   speak(el.textContent);
@@ -962,6 +1065,32 @@ function speakEl(sel){
     btn.classList.add('speaking');
     setTimeout(()=>btn.classList.remove('speaking'), 1500);
   }
+}
+
+// Bouton de test audio : diagnostic + lecture d'un message
+function testAudio(){
+  if(!state.tts){
+    toast('🔇 La voix est désactivée. Active-la avec le bouton 🔊 en haut.');
+    return;
+  }
+  if(!('speechSynthesis' in window)){
+    alert('❌ Ton navigateur ne supporte pas la synthèse vocale.\n\nEssaie Chrome ou Safari récent.');
+    return;
+  }
+  const voices = window.speechSynthesis.getVoices();
+  if(voices.length === 0){
+    toast('⏳ Chargement des voix… réessaie dans 2 secondes');
+    return;
+  }
+  const fr = voices.find(v => v.lang.startsWith('fr'));
+  if(!fr){
+    alert('⚠️ Aucune voix française installée.\n\n' +
+      'Sur Android : Paramètres → Langue → Synthèse vocale → installer Français\n' +
+      'Sur iOS : Réglages → Accessibilité → Contenu énoncé → Voix → Français');
+    return;
+  }
+  speak('Bonjour ! Je suis ta guide SQL Quest. Si tu entends ce message, tout fonctionne correctement.');
+  toast('🔊 Test audio en cours…');
 }
 
 /* =========================================================
@@ -1026,6 +1155,8 @@ function updateTopbar(){
   document.getElementById('xp-next-label').textContent = li.into + ' / ' + li.need;
   document.getElementById('xp-fill').style.width = li.pct + '%';
   updateTTSBtn();
+  const tb = document.getElementById('test-audio-btn');
+  if(tb) tb.classList.toggle('off', !state.tts);
 }
 function esc(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1040,7 +1171,7 @@ document.addEventListener('click', e=>{
    9. HOME
    ========================================================= */
 function renderHome(){
-  window.speechSynthesis && window.speechSynthesis.cancel();
+  if('speechSynthesis' in window) window.speechSynthesis.cancel();
   let html = `<div class="hero">
     <h1>Apprends <em>SQL</em> en jouant.</h1>
     <p>Un vrai moteur SQL dans ton navigateur. Des quêtes, des boss, des mini-jeux, et la voix qui t'explique tout.</p>
@@ -1106,7 +1237,6 @@ function renderHome(){
 let current = {lessonId:null, idx:0, hintsUsed:false, attempts:0};
 
 function openLesson(lessonId){
-  unlockTTS();
   current = {lessonId, idx:0, hintsUsed:false, attempts:0};
   renderLesson();
 }
@@ -1177,7 +1307,9 @@ function renderLesson(){
   });
   updateLineNumbers();
   updateTopbar();
-  setTimeout(()=>{ if(state.tts) speak(ex.prompt); }, 250);
+  // auto-speak : ne fonctionne qu'après déverrouillage (1er geste)
+  // → pas critique, l'utilisateur peut toujours taper 🔊
+  setTimeout(()=>{ if(state.tts && ttsUnlocked) speak(ex.prompt); }, 250);
 }
 
 function updateLineNumbers(){
@@ -1321,7 +1453,7 @@ function finishLesson(){
 let game = null;
 
 function renderArcade(){
-  window.speechSynthesis && window.speechSynthesis.cancel();
+  if('speechSynthesis' in window) window.speechSynthesis.cancel();
   let html = `<button class="back" onclick="renderHome()">← Carte</button>
     <div class="hero" style="margin-bottom:24px">
       <h1>🎮 <em>Arcade</em></h1>
@@ -1347,7 +1479,6 @@ function renderArcade(){
 }
 
 function startGame(id){
-  unlockTTS();
   if(id === 'speed'){
     game = {type:'speed', id, score:0, idx:0, total:0, pool:shuffle([...ARCADE.speed.data]), timeLeft:60, answered:false};
     renderSpeedGame();
@@ -1394,7 +1525,7 @@ function renderArcadeQuestion(){
       <div class="feedback" id="arcade-fb"></div>
     </div>`;
   updateTopbar();
-  setTimeout(()=>{ if(state.tts) speak((qText) + (q.sql ? '. ' + q.sql : '')); }, 200);
+  setTimeout(()=>{ if(state.tts && ttsUnlocked) speak((qText) + (q.sql ? '. ' + q.sql : '')); }, 200);
 }
 
 function answerArcade(pick){
@@ -1449,7 +1580,7 @@ function renderSpeedGame(){
       <div class="feedback" id="arcade-fb"></div>
     </div>`;
   updateTopbar();
-  setTimeout(()=>{ if(state.tts) speak((qText) + (q.sql ? '. ' + q.sql : ''), {rate:1.1}); }, 150);
+  setTimeout(()=>{ if(state.tts && ttsUnlocked) speak((qText) + (q.sql ? '. ' + q.sql : ''), {rate:1.1}); }, 150);
 }
 
 function updateSpeedTimer(){
