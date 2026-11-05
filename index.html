@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Quest — Apprends SQL en jouant</title>
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js"></script>
+<style>
+  :root{
+    --bg:#f8fafc; --bg2:#ffffff; --card:#ffffff; --card2:#f1f5f9;
+    --border:#e2e8f0; --border-strong:#cbd5e1;
+    --text:#1e293b; --muted:#64748b;
+    --accent:#7c5cff; --accent2:#0ea5e9; --gold:#f59e0b;
+    --green:#16a34a; --red:#dc2626; --code:#f8fafc;
+    --code-text:#1e293b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(248,250,252,0.90) 100%),
+      url('https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=1920&q=80') center/cover fixed no-repeat;
+    background-color: #f8fafc;
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    min-height:100vh; line-height:1.55;
+  }
+  code,pre,.mono{font-family:'JetBrains Mono','Fira Code',Consolas,monospace}
+  a{color:var(--accent2)}
+
+  #topbar{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:12px 22px;
+    background:rgba(255,255,255,.85); backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .logo{font-weight:800; font-size:1.15rem; letter-spacing:-.5px; white-space:nowrap; color:#1e293b}
+  .logo span{color:var(--accent)}
+  .stat{display:flex; align-items:center; gap:6px; font-size:.9rem; font-weight:600; color:#334155}
+  .stat .val{color:var(--gold)}
+  .xpwrap{flex:1; max-width:280px; margin-left:auto; min-width:140px}
+  .xpmeta{display:flex; justify-content:space-between; font-size:.72rem; color:var(--muted); margin-bottom:4px}
+  .xpbar{height:8px; background:var(--card2); border-radius:99px; overflow:hidden}
+  .xpfill{height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:99px; transition:width .5s ease}
+  .btn-icon{background:#fff; border:1px solid var(--border); color:var(--text);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:.9rem; transition:.15s}
+  .btn-icon:hover{border-color:var(--accent); color:var(--accent)}
+  .btn-icon.off{opacity:.4}
+  .btn-reset{background:transparent; border:1px solid var(--border); color:var(--muted);
+    padding:5px 10px; border-radius:8px; cursor:pointer; font-size:.75rem}
+  .btn-reset:hover{border-color:var(--red); color:var(--red)}
+
+  #app{max-width:1080px; margin:0 auto; padding:34px 22px 80px}
+  .hero{text-align:center; margin-bottom:40px}
+  .hero h1{font-size:2.4rem; letter-spacing:-1.5px; margin-bottom:10px; color:#0f172a}
+  .hero h1 em{font-style:normal; background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent}
+  .hero p{color:var(--muted); max-width:560px; margin:0 auto}
+
+  .world{
+    background:#ffffff; border:1px solid var(--border); border-radius:18px;
+    padding:22px; margin-bottom:22px; transition:.2s;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+  }
+  .world.clickable{cursor:pointer}
+  .world.clickable:hover{transform:translateY(-2px); border-color:var(--accent);
+    box-shadow:0 4px 12px rgba(124,92,255,0.12), 0 8px 24px rgba(0,0,0,0.06)}
+  .world.locked{opacity:.55}
+  .world-head{display:flex; align-items:center; gap:14px; margin-bottom:6px; flex-wrap:wrap}
+  .world-emoji{font-size:1.9rem}
+  .world-title{font-size:1.25rem; font-weight:700; color:#0f172a}
+  .world-desc{color:var(--muted); font-size:.85rem}
+  .world-prog{margin-left:auto; text-align:right; font-size:.8rem; color:var(--muted)}
+  .world-prog b{color:var(--accent2); font-size:1.05rem}
+
+  .lessons{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; margin-top:18px}
+  .lesson{
+    background:var(--card2); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; cursor:pointer; transition:.18s; position:relative;
+  }
+  .lesson:hover:not(.locked){transform:translateY(-3px); border-color:var(--accent);
+    background:#fff; box-shadow:0 8px 24px rgba(124,92,255,.15)}
+  .lesson.locked{opacity:.45; cursor:not-allowed}
+  .lesson.done{border-color:rgba(22,163,74,.4); background:#f0fdf4}
+  .lesson-name{font-weight:600; font-size:.92rem; margin-bottom:6px; color:#0f172a}
+  .lesson-stars{font-size:.85rem; letter-spacing:2px; color:var(--gold)}
+  .lesson-idx{position:absolute; top:12px; right:14px; font-size:.7rem; color:var(--muted)}
+
+  .badges-sec{margin-top:40px}
+  .badges-sec h2{font-size:1.1rem; margin-bottom:14px; color:#0f172a}
+  .badges{display:flex; flex-wrap:wrap; gap:10px}
+  .badge{background:#fff; border:1px solid var(--border); border-radius:10px;
+    padding:8px 14px; font-size:.82rem; display:flex; gap:8px; align-items:center; color:#334155}
+  .badge.off{opacity:.35; filter:grayscale(1)}
+  .badge.on{border-color:var(--gold); background:#fffbeb;
+    box-shadow:0 0 16px rgba(245,158,11,.15); color:#92400e}
+
+  .back{background:#fff; border:1px solid var(--border); color:var(--text);
+    padding:8px 16px; border-radius:10px; cursor:pointer; font-size:.85rem; margin-bottom:22px; transition:.15s}
+  .back:hover{border-color:var(--accent); color:var(--accent)}
+
+  .theory{
+    background:#ffffff; border:1px solid var(--border); border-radius:16px;
+    padding:22px 24px; margin-bottom:22px; position:relative;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+  }
+  .theory h2{font-size:1.3rem; margin-bottom:14px; color:#0f172a}
+  .theory p{margin-bottom:10px; color:#334155; font-size:.93rem}
+  .theory ul{margin:0 0 12px 20px; color:#334155; font-size:.93rem}
+  .theory li{margin-bottom:6px}
+  .theory strong{color:#0f172a}
+  .theory code{
+    background:#eef2ff; padding:2px 7px; border-radius:5px;
+    color:#4338ca; font-size:.85em; font-weight:500;
+  }
+  .theory pre{
+    background:var(--code); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; margin-bottom:12px; font-size:.85rem;
+    color:var(--code-text); line-height:1.6;
+  }
+  .theory pre code{background:transparent; padding:0; color:inherit; font-weight:normal}
+
+  .speak-fab{
+    position:absolute; top:16px; right:16px;
+    background:#fff; border:1px solid var(--border);
+    color:var(--accent); width:36px; height:36px; border-radius:50%;
+    cursor:pointer; font-size:1rem;
+    display:flex; align-items:center; justify-content:center;
+    transition:.15s;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  }
+  .speak-fab:hover{background:var(--accent); color:#fff; border-color:var(--accent); transform:scale(1.1)}
+  .speak-fab.speaking{background:var(--accent); color:#fff; border-color:var(--accent); animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,92,255,.6)}50%{box-shadow:0 0 0 8px rgba(124,92,255,0)}}
+
+  .ex-head{display:flex; align-items:center; gap:12px; margin-bottom:16px}
+  .ex-head strong{color:#0f172a}
+  .ex-dots{display:flex; gap:7px; margin-left:auto}
+  .dot{width:11px; height:11px; border-radius:50%; background:#fff; border:1.5px solid var(--border-strong)}
+  .dot.cur{border-color:var(--accent); background:rgba(124,92,255,.15); box-shadow:0 0 10px var(--accent)}
+  .dot.ok{background:var(--green); border-color:var(--green)}
+
+  .prompt{font-size:1.02rem; margin-bottom:16px; font-weight:500; padding-right:44px; color:#0f172a}
+  .prompt b{color:#4338ca}
+  .prompt code{
+    background:#eef2ff; padding:2px 7px; border-radius:5px;
+    color:#4338ca; font-size:.88em; font-weight:500;
+  }
+
+  .editor-wrap{position:relative; margin-bottom:14px}
+  textarea#editor{
+    width:100%; min-height:110px; resize:vertical;
+    background:#fafbfc; color:var(--code-text);
+    border:1px solid var(--border); border-radius:12px;
+    padding:16px 16px 16px 46px;
+    font-family:'JetBrains Mono',Consolas,monospace; font-size:.9rem; line-height:1.65;
+    outline:none; transition:.18s;
+  }
+  textarea#editor:focus{border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px rgba(124,92,255,.15)}
+  .lineno{
+    position:absolute; left:0; top:0; bottom:0; width:38px;
+    background:#f1f5f9; border-right:1px solid var(--border);
+    border-radius:12px 0 0 12px; display:flex; flex-direction:column;
+    align-items:center; padding-top:16px; font-size:.72rem; color:#94a3b8;
+    font-family:'JetBrains Mono',monospace; gap:1px;
+  }
+
+  .actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px}
+  .btn{border:none; border-radius:10px; padding:10px 20px; font-size:.88rem;
+    font-weight:600; cursor:pointer; transition:.15s; font-family:inherit}
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .btn-run{background:#fff; color:var(--text); border:1px solid var(--border)}
+  .btn-run:hover:not(:disabled){border-color:var(--accent2); color:var(--accent2); background:#f0f9ff}
+  .btn-check{background:linear-gradient(135deg,var(--accent),#5b3fd6); color:#fff;
+    box-shadow:0 2px 8px rgba(124,92,255,.25)}
+  .btn-check:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 8px 20px rgba(124,92,255,.4)}
+  .btn-hint{background:transparent; color:#b45309; border:1px solid rgba(245,158,11,.4)}
+  .btn-hint:hover:not(:disabled){background:#fffbeb; border-color:var(--gold)}
+  .btn-next{background:var(--green); color:#fff; box-shadow:0 2px 8px rgba(22,163,74,.25)}
+  .btn-next:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 8px 20px rgba(22,163,74,.35)}
+
+  .feedback{border-radius:12px; padding:14px 18px; margin-bottom:16px; font-size:.9rem; display:none}
+  .feedback.show{display:block}
+  .feedback.ok{background:#dcfce7; border:1px solid #86efac; color:#166534}
+  .feedback.err{background:#fee2e2; border:1px solid #fca5a5; color:#991b1b}
+  .feedback.info{background:#ede9fe; border:1px solid #c4b5fd; color:#5b21b6}
+  .feedback b{font-weight:700}
+
+  .hintbox{border-radius:12px; padding:14px 18px; margin-bottom:16px; font-size:.88rem;
+    background:#fef3c7; border:1px solid #fcd34d; color:#92400e; display:none}
+  .hintbox.show{display:block}
+
+  .results{border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; display:none; background:#fff}
+  .results.show{display:block}
+  .results-bar{background:var(--card2); padding:8px 14px; font-size:.75rem; color:var(--muted);
+    display:flex; justify-content:space-between; border-bottom:1px solid var(--border)}
+  .table-scroll{overflow-x:auto; max-height:340px; overflow-y:auto}
+  table{width:100%; border-collapse:collapse; font-size:.82rem}
+  th{background:#f1f5f9; text-align:left; padding:9px 14px; color:#4338ca; font-weight:600;
+    position:sticky; top:0; border-bottom:1px solid var(--border);
+    font-family:'JetBrains Mono',monospace; font-size:.78rem}
+  td{padding:8px 14px; border-bottom:1px solid #f1f5f9;
+    font-family:'JetBrains Mono',monospace; color:#334155; white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#f8fafc}
+  td.null{color:#94a3b8; font-style:italic}
+
+  .complete{text-align:center; padding:50px 20px}
+  .complete .big{font-size:4rem; margin-bottom:16px; animation:pop .5s}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+  .complete h2{font-size:1.6rem; margin-bottom:10px; color:#0f172a}
+  .complete .stars{font-size:2rem; color:var(--gold); letter-spacing:6px; margin:14px 0}
+  .complete p{color:var(--muted); margin-bottom:24px}
+
+  #loader{position:fixed; inset:0; background:#ffffff; z-index:999; display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:20px}
+  .spinner{width:44px; height:44px; border:3px solid var(--card2); border-top-color:var(--accent);
+    border-radius:50%; animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loader p{color:var(--muted); font-size:.9rem}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:100; display:flex;
+    align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px)}
+  .modal{background:#ffffff; border:1px solid var(--border); border-radius:16px; max-width:640px;
+    width:100%; max-height:80vh; overflow-y:auto; padding:26px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.25)}
+  .modal h3{margin-bottom:16px; color:#0f172a}
+  .modal pre{background:var(--code); border:1px solid var(--border); padding:14px;
+    border-radius:10px; font-size:.8rem; overflow-x:auto; color:var(--code-text); margin-bottom:12px}
+  .modal .btn{margin-top:10px}
+
+  #toast{position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(100px);
+    background:#1e293b; border:1px solid var(--gold); color:#fbbf24; padding:12px 24px;
+    border-radius:12px; font-size:.88rem; font-weight:600; transition:.35s; z-index:200;
+    opacity:0; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+  #toast.show{transform:translateX(-50%) translateY(0); opacity:1}
+
+  .opt-btn{background:#fff; border:1px solid var(--border); color:var(--text);
+    padding:14px 18px; border-radius:12px; text-align:left; cursor:pointer; font-size:.92rem;
+    font-family:inherit; transition:.15s; width:100%; margin-bottom:10px; display:block}
+  .opt-btn:hover:not(:disabled){border-color:var(--accent); background:#f5f3ff}
+  .opt-btn:disabled{cursor:not-allowed}
+  .opt-btn.correct{background:#dcfce7; border-color:var(--green); color:#166534}
+  .opt-btn.wrong{background:#fee2e2; border-color:var(--red); color:#991b1b}
+
+  .quiz-sql{background:var(--code); border:1px solid var(--border); border-radius:12px;
+    padding:16px; font-family:'JetBrains Mono',monospace; font-size:.9rem; color:var(--code-text);
+    margin-bottom:18px; white-space:pre-wrap; overflow-x:auto; line-height:1.6}
+
+  .timer{display:flex; align-items:center; gap:8px; font-size:1.05rem; font-weight:700; color:#b45309}
+  .timer.warn{color:var(--red); animation:pulse 0.5s infinite}
+  .score-big{font-size:3rem; font-weight:800; color:var(--accent); margin:14px 0}
+
+  @media(max-width:640px){
+    #topbar{gap:8px; padding:10px 14px}
+    .xpwrap{max-width:100%; order:5; width:100%; margin-left:0}
+    .hero h1{font-size:1.8rem}
+    .lessons{grid-template-columns:1fr}
+    .world-prog{margin-left:0}
+  }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="spinner"></div>
+  <p>Chargement du moteur SQL…</p>
+</div>
+
+<header id="topbar">
+  <div class="logo">SQL<span>Quest</span></div>
+  <div class="stat">🔥 <span class="val" id="s-streak">0</span></div>
+  <div class="stat">⭐ <span class="val" id="s-xp">0</span> XP</div>
+  <div class="stat">🏅 <span class="val" id="s-level">1</span></div>
+  <div class="xpwrap">
+    <div class="xpmeta"><span id="xp-lvl-label">Niveau 1</span><span id="xp-next-label">0 / 100</span></div>
+    <div class="xpbar"><div class="xpfill" id="xp-fill"></div></div>
+  </div>
+  <button class="btn-icon" id="tts-btn" onclick="toggleTTS()" title="Activer / désactiver la voix">🔊</button>
+  <button class="btn-reset" onclick="resetProgress()">Reset</button>
+</header>
+
+<main id="app"></main>
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   1. DATASETS
+   ========================================================= */
+const DB_SQL = `
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL,
+  price REAL NOT NULL, stock INTEGER NOT NULL
+);
+INSERT INTO products VALUES
+(1,'Laptop Pro','Informatique',1299.99,15),(2,'Souris sans fil','Informatique',29.99,120),
+(3,'Clavier mécanique','Informatique',89.50,60),(4,'Écran 27 pouces','Informatique',349.00,25),
+(5,'Casque audio','Audio',199.99,40),(6,'Enceinte Bluetooth','Audio',79.90,80),
+(7,'Câble USB-C','Accessoire',14.99,300),(8,'Chargeur rapide','Accessoire',34.99,150),
+(9,'Webcam HD','Informatique',59.99,35),(10,'Micro de studio','Audio',119.00,20),
+(11,'Tablette 10 pouces','Informatique',449.00,18),(12,'Support écran','Accessoire',49.90,45),
+(13,'SSD 1To','Informatique',109.99,55),(14,'Hub USB','Accessoire',24.99,200),
+(15,'Casque gamer','Audio',149.99,30);
+
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL, country TEXT NOT NULL
+);
+INSERT INTO customers VALUES
+(1,'Alice Martin','Paris','France'),(2,'Bob Dupont','Lyon','France'),
+(3,'Carla Rossi','Rome','Italie'),(4,'David Chen','Shanghai','Chine'),
+(5,'Emma Müller','Berlin','Allemagne'),(6,'Farid Benali','Casablanca','Maroc'),
+(7,'Grace Okafor','Lagos','Nigeria'),(8,'Hugo Silva','Lisbonne','Portugal'),
+(9,'Ines Garcia','Madrid','Espagne'),(10,'Jules Petit','Marseille','France'),
+(11,'Kim Lee','Séoul','Corée'),(12,'Luca Bianchi','Milan','Italie'),
+(13,'Nora Haddad','Tunis','Tunisie');
+
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL, product_id INTEGER NOT NULL,
+  quantity INTEGER NOT NULL, order_date TEXT NOT NULL
+);
+INSERT INTO orders VALUES
+(1,1,1,1,'2024-01-05'),(2,2,5,2,'2024-01-12'),(3,1,7,3,'2024-01-20'),
+(4,3,3,1,'2024-02-02'),(5,4,11,1,'2024-02-14'),(6,5,6,2,'2024-02-18'),
+(7,2,13,1,'2024-03-01'),(8,6,2,4,'2024-03-08'),(9,7,9,1,'2024-03-15'),
+(10,3,15,1,'2024-03-22'),(11,8,4,2,'2024-04-01'),(12,1,10,1,'2024-04-05'),
+(13,9,12,3,'2024-04-11'),(14,10,8,5,'2024-04-19'),(15,4,1,1,'2024-05-02'),
+(16,5,6,2,'2024-05-09'),(17,2,7,10,'2024-05-16'),(18,11,6,1,'2024-05-23'),
+(19,12,3,2,'2024-06-01'),(20,1,5,1,'2024-06-10'),(21,6,11,1,'2024-06-18'),
+(22,7,2,2,'2024-06-25'),(23,3,9,1,'2024-07-04'),(24,8,13,2,'2024-07-12'),
+(25,9,1,1,'2024-07-20'),(26,10,6,3,'2024-08-01'),(27,4,15,1,'2024-08-09'),
+(28,11,4,1,'2024-08-17'),(29,12,7,4,'2024-08-25'),(30,5,10,2,'2024-09-02');
+`;
+
+/* =========================================================
+   2. CURRICULUM
+   ========================================================= */
+const CURRICULUM = [
+{id:'w1',title:"L'Éveil",emoji:'🌅',desc:"SELECT & WHERE — les fondations",
+ lessons:[
+  {id:'w1l1',title:'La commande SELECT',
+   theory:`<h2>SELECT — lire les données</h2>
+     <p><code>SELECT</code> est la commande de base : elle sert à <strong>lire</strong> des données depuis une table.</p>
+     <pre>SELECT colonnes FROM table;</pre>
+     <ul><li><code>*</code> = toutes les colonnes</li>
+     <li>On peut lister les colonnes : <code>SELECT name, price FROM products</code></li>
+     <li><code>AS</code> donne un alias : <code>SELECT name AS produit</code></li>
+     <li><code>DISTINCT</code> supprime les doublons</li></ul>
+     <p>💡 Tables : <code>products</code>, <code>customers</code>, <code>orders</code>.</p>`,
+   exercises:[
+    {prompt:"Affiche <b>toutes les colonnes</b> de la table <code>products</code>.",
+     starter:"SELECT ", solution:"SELECT * FROM products",
+     hint:"Utilise l'astérisque * pour dire « toutes les colonnes »."},
+    {prompt:"Affiche uniquement le <b>nom</b> et le <b>prix</b> des produits.",
+     starter:"SELECT ", solution:"SELECT name, price FROM products",
+     hint:"Sépare les colonnes par une virgule."},
+    {prompt:"Affiche le nom des produits avec l'alias <b>produit</b>.",
+     starter:"SELECT ", solution:"SELECT name AS produit FROM products",
+     hint:"Syntaxe : colonne AS alias."},
+    {prompt:"Affiche les <b>catégories distinctes</b> présentes dans products.",
+     starter:"SELECT ", solution:"SELECT DISTINCT category FROM products",
+     hint:"DISTINCT s'écrit juste après SELECT."}]},
+  {id:'w1l2',title:'Filtrer avec WHERE',
+   theory:`<h2>WHERE — filtrer les lignes</h2>
+     <p><code>WHERE</code> garde uniquement les lignes qui respectent une condition.</p>
+     <pre>SELECT * FROM products WHERE price &gt; 100;</pre>
+     <ul><li>Comparaisons : <code>=</code> <code>&lt;&gt;</code> <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code></li>
+     <li>Combiner : <code>AND</code>, <code>OR</code>, <code>NOT</code></li>
+     <li>Intervalle : <code>BETWEEN a AND b</code></li>
+     <li>Liste : <code>IN ('a','b')</code></li></ul>
+     <p>⚠️ Les textes s'écrivent entre apostrophes.</p>`,
+   exercises:[
+    {prompt:"Affiche le nom et le prix des produits dont le prix est <b>supérieur à 100</b>.",
+     starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE price > 100",
+     hint:"WHERE price > 100"},
+    {prompt:"Affiche tous les produits de la catégorie <b>'Audio'</b>.",
+     starter:"SELECT * FROM products WHERE ", solution:"SELECT * FROM products WHERE category = 'Audio'",
+     hint:"Les chaînes se mettent entre apostrophes simples."},
+    {prompt:"Affiche le nom et le stock des produits dont le stock est <b>entre 20 et 60 inclus</b>.",
+     starter:"SELECT name, stock FROM products WHERE ", solution:"SELECT name, stock FROM products WHERE stock BETWEEN 20 AND 60",
+     hint:"BETWEEN 20 AND 60"},
+    {prompt:"Affiche le nom et la catégorie des produits de catégorie <b>'Audio' ou 'Accessoire'</b>.",
+     starter:"SELECT name, category FROM products WHERE ", solution:"SELECT name, category FROM products WHERE category IN ('Audio','Accessoire')",
+     hint:"IN ('Audio','Accessoire')"}]},
+  {id:'w1l3',title:'LIKE & opérateurs logiques',
+   theory:`<h2>Rechercher du texte avec LIKE</h2>
+     <p><code>LIKE</code> cherche un motif dans du texte.</p>
+     <ul><li><code>%</code> = n'importe quelle suite de caractères</li>
+     <li><code>_</code> = exactement un caractère</li></ul>
+     <pre>'A%' → commence par A
+'%a' → finit par a
+'%usb%' → contient usb</pre>
+     <p>On combine avec <code>AND</code> / <code>OR</code> / <code>NOT IN</code>.</p>`,
+   exercises:[
+    {prompt:"Affiche le nom des produits qui <b>contiennent 'USB'</b>.",
+     starter:"SELECT name FROM products WHERE ", solution:"SELECT name FROM products WHERE name LIKE '%USB%'",
+     hint:"LIKE '%USB%'"},
+    {prompt:"Affiche le nom des produits qui <b>commencent par 'C'</b>.",
+     starter:"SELECT name FROM products WHERE ", solution:"SELECT name FROM products WHERE name LIKE 'C%'",
+     hint:"LIKE 'C%'"},
+    {prompt:"Affiche nom, prix et stock des produits dont le prix est <b>supérieur à 1000</b> <u>ou</u> le stock <b>inférieur à 20</b>.",
+     starter:"SELECT name, price, stock FROM products WHERE ", solution:"SELECT name, price, stock FROM products WHERE price > 1000 OR stock < 20",
+     hint:"Utilise OR entre les deux conditions."},
+    {prompt:"Affiche nom et catégorie des produits qui <b>ne sont ni 'Audio' ni 'Accessoire'</b>.",
+     starter:"SELECT name, category FROM products WHERE ", solution:"SELECT name, category FROM products WHERE category NOT IN ('Audio','Accessoire')",
+     hint:"NOT IN ('Audio','Accessoire')"}]},
+  {id:'w1l4',title:"⚔️ Boss — L'Épreuve du Seuil",
+   theory:`<h2>⚔️ Boss du Monde 1</h2>
+     <p>Tu as appris <code>SELECT</code>, <code>WHERE</code>, <code>LIKE</code>, <code>IN</code>, <code>BETWEEN</code>.</p>
+     <p>Ce boss mélange tout. Prends ton temps.</p>`,
+   exercises:[
+    {prompt:"Affiche le nom des clients qui habitent en <b>France</b>.",
+     starter:"SELECT name FROM customers WHERE ", solution:"SELECT name FROM customers WHERE country = 'France'",
+     hint:"Table customers, colonne country."},
+    {prompt:"Affiche le nom et le prix des produits de catégorie <b>'Informatique'</b> coûtant <b>plus de 300</b>.",
+     starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE category = 'Informatique' AND price > 300",
+     hint:"Deux conditions reliées par AND."},
+    {prompt:"Affiche les produits dont le nom <b>contient 'Casque'</b>.",
+     starter:"SELECT * FROM products WHERE ", solution:"SELECT * FROM products WHERE name LIKE '%Casque%'",
+     hint:"LIKE '%Casque%'"},
+    {prompt:"Affiche nom et ville des clients dont la ville <b>n'est pas</b> 'Paris' et qui viennent d'un pays <b>différent de 'France'</b>.",
+     starter:"SELECT name, city FROM customers WHERE ", solution:"SELECT name, city FROM customers WHERE city <> 'Paris' AND country <> 'France'",
+     hint:"L'opérateur « différent de » s'écrit <>."}]}
+ ]},
+{id:'w2',title:"L'Ordre",emoji:'📊',desc:"Trier, compter, regrouper",
+ lessons:[
+  {id:'w2l1',title:'ORDER BY & LIMIT',
+   theory:`<h2>Trier et limiter</h2>
+     <pre>SELECT * FROM products ORDER BY price DESC;</pre>
+     <ul><li><code>ASC</code> = croissant (défaut), <code>DESC</code> = décroissant</li>
+     <li>Plusieurs tris : <code>ORDER BY cat ASC, price DESC</code></li>
+     <li><code>LIMIT n</code> ne garde que les n premières lignes</li></ul>
+     <p>⚠️ Sans <code>ORDER BY</code>, l'ordre n'est pas garanti.</p>`,
+   exercises:[
+    {prompt:"Affiche nom et prix des produits <b>triés par prix croissant</b>.",
+     starter:"SELECT name, price FROM products ORDER BY ", solution:"SELECT name, price FROM products ORDER BY price ASC",
+     hint:"ORDER BY price ASC", ordered:true},
+    {prompt:"Affiche les <b>3 produits les plus chers</b> (nom et prix).",
+     starter:"SELECT name, price FROM products ORDER BY ", solution:"SELECT name, price FROM products ORDER BY price DESC LIMIT 3",
+     hint:"DESC + LIMIT 3", ordered:true},
+    {prompt:"Affiche nom et ville des clients <b>triés par ville</b> (A→Z).",
+     starter:"SELECT name, city FROM customers ORDER BY ", solution:"SELECT name, city FROM customers ORDER BY city ASC",
+     hint:"ORDER BY city", ordered:true},
+    {prompt:"Affiche les <b>5 produits 'Informatique' les moins chers</b> (nom et prix).",
+     starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE category = 'Informatique' ORDER BY price ASC LIMIT 5",
+     hint:"WHERE puis ORDER BY puis LIMIT.", ordered:true}]},
+  {id:'w2l2',title:"Fonctions d'agrégation",
+   theory:`<h2>Agréger des données</h2>
+     <p>Les agrégats calculent <strong>une seule valeur</strong> à partir de plusieurs lignes.</p>
+     <ul><li><code>COUNT(*)</code> — nombre de lignes</li>
+     <li><code>COUNT(col)</code> — nombre de valeurs non NULL</li>
+     <li><code>SUM(col)</code> — somme</li>
+     <li><code>AVG(col)</code> — moyenne</li>
+     <li><code>MIN(col)</code> / <code>MAX(col)</code> — min / max</li></ul>
+     <pre>SELECT COUNT(*) FROM products;
+SELECT AVG(price) FROM products;</pre>`,
+   exercises:[
+    {prompt:"Affiche le <b>nombre total de produits</b>.",
+     starter:"SELECT ", solution:"SELECT COUNT(*) FROM products",
+     hint:"COUNT(*)"},
+    {prompt:"Affiche le <b>prix moyen</b> des produits.",
+     starter:"SELECT ", solution:"SELECT AVG(price) FROM products",
+     hint:"AVG(price)"},
+    {prompt:"Affiche le <b>prix minimum</b> et le <b>prix maximum</b> des produits (2 colonnes).",
+     starter:"SELECT ", solution:"SELECT MIN(price), MAX(price) FROM products",
+     hint:"MIN(price), MAX(price)"},
+    {prompt:"Affiche la <b>somme totale du stock</b> de tous les produits.",
+     starter:"SELECT ", solution:"SELECT SUM(stock) FROM products",
+     hint:"SUM(stock)"}]},
+  {id:'w2l3',title:'GROUP BY & HAVING',
+   theory:`<h2>Regrouper</h2>
+     <p><code>GROUP BY</code> regroupe les lignes qui partagent une valeur.</p>
+     <pre>SELECT category, COUNT(*) FROM products GROUP BY category;</pre>
+     <ul><li><code>WHERE</code> filtre les lignes <strong>avant</strong> le regroupement</li>
+     <li><code>HAVING</code> filtre les groupes <strong>après</strong> l'agrégation</li></ul>
+     <pre>SELECT category, SUM(stock) FROM products
+GROUP BY category HAVING SUM(stock) &gt; 200;</pre>`,
+   exercises:[
+    {prompt:"Affiche le <b>nombre de produits par catégorie</b> (catégorie + compte).",
+     starter:"SELECT category, ", solution:"SELECT category, COUNT(*) FROM products GROUP BY category",
+     hint:"GROUP BY category"},
+    {prompt:"Affiche le <b>prix moyen par catégorie</b> (catégorie + moyenne).",
+     starter:"SELECT category, ", solution:"SELECT category, AVG(price) FROM products GROUP BY category",
+     hint:"AVG(price) + GROUP BY"},
+    {prompt:"Affiche les catégories dont le <b>stock total dépasse 200</b> (catégorie + total).",
+     starter:"SELECT category, SUM(stock) FROM products GROUP BY category HAVING ", solution:"SELECT category, SUM(stock) FROM products GROUP BY category HAVING SUM(stock) > 200",
+     hint:"HAVING SUM(stock) > 200"},
+    {prompt:"Affiche le <b>stock total par catégorie</b>, trié par total <b>décroissant</b>.",
+     starter:"SELECT category, SUM(stock) AS total FROM products GROUP BY category ORDER BY ", solution:"SELECT category, SUM(stock) AS total FROM products GROUP BY category ORDER BY total DESC",
+     hint:"ORDER BY total DESC", ordered:true}]},
+  {id:'w2l4',title:"⚔️ Boss — Le Cercle des Nombres",
+   theory:`<h2>⚔️ Boss du Monde 2</h2>
+     <p>Tris, agrégats, regroupements… tout se mélange ici.</p>
+     <p>Rappel : <code>WHERE</code> avant <code>GROUP BY</code>, <code>HAVING</code> après.</p>`,
+   exercises:[
+    {prompt:"Affiche nom et ville des clients <b>français</b>, triés par nom.",
+     starter:"SELECT name, city FROM customers WHERE ", solution:"SELECT name, city FROM customers WHERE country = 'France' ORDER BY name ASC",
+     hint:"WHERE … ORDER BY name", ordered:true},
+    {prompt:"Affiche le <b>nombre de clients par pays</b>.",
+     starter:"SELECT country, ", solution:"SELECT country, COUNT(*) FROM customers GROUP BY country",
+     hint:"GROUP BY country"},
+    {prompt:"Affiche le <b>prix moyen</b> des produits de catégorie 'Audio'.",
+     starter:"SELECT ", solution:"SELECT AVG(price) FROM products WHERE category = 'Audio'",
+     hint:"AVG + WHERE"},
+    {prompt:"Affiche les catégories dont le <b>prix moyen dépasse 100</b>, triées par prix moyen décroissant.",
+     starter:"SELECT category, AVG(price) AS moy FROM products GROUP BY category HAVING ", solution:"SELECT category, AVG(price) AS moy FROM products GROUP BY category HAVING AVG(price) > 100 ORDER BY moy DESC",
+     hint:"HAVING AVG(price) > 100 puis ORDER BY moy DESC", ordered:true}]}
+ ]},
+{id:'w3',title:"Les Liens",emoji:'🔗',desc:"JOIN — relier les tables",
+ lessons:[
+  {id:'w3l1',title:'INNER JOIN',
+   theory:`<h2>Relier deux tables</h2>
+     <p><code>JOIN</code> combine les lignes de deux tables selon une condition.</p>
+     <pre>SELECT c.name, o.order_date
+FROM orders o
+JOIN customers c ON o.customer_id = c.id;</pre>
+     <ul><li>On donne un <strong>alias</strong> à chaque table : <code>orders o</code></li>
+     <li><code>ON</code> précise la condition de jointure</li>
+     <li><code>JOIN</code> seul = <code>INNER JOIN</code></li></ul>`,
+   exercises:[
+    {prompt:"Affiche le <b>nom du client</b> et la <b>date de commande</b>.",
+     starter:"SELECT c.name, o.order_date FROM orders o JOIN ", solution:"SELECT c.name, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id",
+     hint:"JOIN customers c ON o.customer_id = c.id"},
+    {prompt:"Affiche le <b>nom du produit</b> commandé et la <b>quantité</b>.",
+     starter:"SELECT p.name, o.quantity FROM orders o JOIN ", solution:"SELECT p.name, o.quantity FROM orders o JOIN products p ON o.product_id = p.id",
+     hint:"JOIN products p ON o.product_id = p.id"},
+    {prompt:"Affiche les <b>commandes d'Alice Martin</b> (id + date).",
+     starter:"SELECT o.id, o.order_date FROM orders o JOIN customers c ON ", solution:"SELECT o.id, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.name = 'Alice Martin'",
+     hint:"Ajoute un WHERE sur c.name."},
+    {prompt:"Pour chaque commande : <b>nom du client</b>, <b>nom du produit</b>, <b>quantité</b>.",
+     starter:"SELECT c.name, p.name, o.quantity FROM orders o ", solution:"SELECT c.name, p.name, o.quantity FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id",
+     hint:"Deux JOIN successifs : customers puis products."}]},
+  {id:'w3l2',title:'LEFT JOIN',
+   theory:`<h2>LEFT JOIN — garder tout le monde</h2>
+     <p><code>LEFT JOIN</code> garde <strong>toutes les lignes de gauche</strong>, même sans correspondance (colonnes de droite à NULL).</p>
+     <pre>SELECT c.name, o.id FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id;</pre>
+     <p>💡 Pour trouver les <strong>absents</strong> :</p>
+     <pre>WHERE o.id IS NULL</pre>`,
+   exercises:[
+    {prompt:"Affiche chaque client avec son <b>nombre de commandes</b> (0 si aucune).",
+     starter:"SELECT c.name, COUNT(o.id) FROM customers c LEFT JOIN orders o ON ", solution:"SELECT c.name, COUNT(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name",
+     hint:"LEFT JOIN puis GROUP BY c.id, c.name"},
+    {prompt:"Affiche les <b>clients n'ayant jamais commandé</b>.",
+     starter:"SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE ", solution:"SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL",
+     hint:"WHERE o.id IS NULL"},
+    {prompt:"Affiche les <b>produits jamais commandés</b>.",
+     starter:"SELECT p.name FROM products p LEFT JOIN orders o ON o.product_id = p.id WHERE ", solution:"SELECT p.name FROM products p LEFT JOIN orders o ON o.product_id = p.id WHERE o.id IS NULL",
+     hint:"Même technique avec products."},
+    {prompt:"Affiche le <b>nom de chaque produit</b> et son <b>nombre de commandes</b> (0 inclus).",
+     starter:"SELECT p.name, COUNT(o.id) FROM products p LEFT JOIN orders o ON ", solution:"SELECT p.name, COUNT(o.id) FROM products p LEFT JOIN orders o ON o.product_id = p.id GROUP BY p.id, p.name",
+     hint:"GROUP BY p.id, p.name"}]},
+  {id:'w3l3',title:'JOIN + agrégats',
+   theory:`<h2>Analyser avec les jointures</h2>
+     <p>On peut combiner <code>JOIN</code> et agrégats pour de vraies analyses.</p>
+     <pre>SELECT c.name, SUM(o.quantity * p.price) AS total
+FROM orders o
+JOIN customers c ON o.customer_id = c.id
+JOIN products p  ON o.product_id  = p.id
+GROUP BY c.id, c.name
+ORDER BY total DESC;</pre>`,
+   exercises:[
+    {prompt:"Affiche le <b>chiffre d'affaires total</b> (somme de quantity × price).",
+     starter:"SELECT SUM(o.quantity * p.price) FROM orders o JOIN products p ON ", solution:"SELECT SUM(o.quantity * p.price) FROM orders o JOIN products p ON o.product_id = p.id",
+     hint:"SUM(o.quantity * p.price)"},
+    {prompt:"Affiche le <b>CA par catégorie</b>, trié par CA décroissant.",
+     starter:"SELECT p.category, SUM(o.quantity * p.price) AS ca FROM orders o JOIN products p ON o.product_id = p.id GROUP BY ", solution:"SELECT p.category, SUM(o.quantity * p.price) AS ca FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category ORDER BY ca DESC",
+     hint:"GROUP BY p.category puis ORDER BY ca DESC", ordered:true},
+    {prompt:"Affiche les <b>3 clients ayant passé le plus de commandes</b> (nom + nombre), départage alphabétique.",
+     starter:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.id, c.name ORDER BY nb DESC, c.name ASC LIMIT 3",
+     hint:"ORDER BY nb DESC, c.name ASC LIMIT 3", ordered:true},
+    {prompt:"Affiche les <b>3 produits les plus vendus en quantité</b> (nom + quantité totale), départage alphabétique.",
+     starter:"SELECT p.name, SUM(o.quantity) AS total FROM orders o JOIN products p ON ", solution:"SELECT p.name, SUM(o.quantity) AS total FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.id, p.name ORDER BY total DESC, p.name ASC LIMIT 3",
+     hint:"GROUP BY p.id, p.name puis ORDER BY total DESC", ordered:true}]},
+  {id:'w3l4',title:'⚔️ Boss — Le Grand Croisement',
+   theory:`<h2>⚔️ Boss final</h2>
+     <p>Jointures, agrégats, LEFT JOIN, HAVING, tris… tout est là.</p>
+     <p>Tu es au bout du parcours. Bonne chance.</p>`,
+   exercises:[
+    {prompt:"Affiche chaque client et son <b>nombre de commandes</b>, trié par nombre décroissant puis nom.",
+     starter:"SELECT c.name, COUNT(o.id) AS nb FROM customers c LEFT JOIN orders o ON ", solution:"SELECT c.name, COUNT(o.id) AS nb FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name ORDER BY nb DESC, c.name ASC",
+     hint:"LEFT JOIN + GROUP BY + ORDER BY nb DESC, c.name", ordered:true},
+    {prompt:"Affiche le <b>nombre de commandes par pays</b>, trié décroissant puis pays.",
+     starter:"SELECT c.country, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.country, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.country ORDER BY nb DESC, c.country ASC",
+     hint:"GROUP BY c.country, ORDER BY nb DESC", ordered:true},
+    {prompt:"Affiche les clients ayant passé <b>au moins 3 commandes</b>, trié par nombre décroissant puis nom.",
+     starter:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.id, c.name HAVING COUNT(*) >= 3 ORDER BY nb DESC, c.name ASC",
+     hint:"HAVING COUNT(*) >= 3", ordered:true},
+    {prompt:"Affiche le <b>CA total par pays</b>, trié par CA décroissant.",
+     starter:"SELECT c.country, SUM(o.quantity * p.price) AS ca FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON ", solution:"SELECT c.country, SUM(o.quantity * p.price) AS ca FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id GROUP BY c.country ORDER BY ca DESC",
+     hint:"Double JOIN + GROUP BY + ORDER BY", ordered:true}]}
+ ]}
+];
+
+/* =========================================================
+   3. ARCADE DATA
+   ========================================================= */
+const QUIZ_QS = [
+  {q:"Que fait l'astérisque * dans SELECT * ?", opts:["Sélectionne une colonne","Sélectionne toutes les colonnes","Multiplie","Supprime tout"], a:1, exp:"* signifie « toutes les colonnes »."},
+  {q:"Quel mot-clé filtre les lignes ?", opts:["WHERE","HAVING","ORDER BY","LIMIT"], a:0, exp:"WHERE filtre les lignes selon une condition."},
+  {q:"Quelle fonction compte les lignes ?", opts:["SUM","COUNT","AVG","MAX"], a:1, exp:"COUNT compte les lignes."},
+  {q:"ORDER BY price DESC trie comment ?", opts:["Croissant","Aléatoire","Décroissant","Alphabétique"], a:2, exp:"DESC = décroissant (du plus grand au plus petit)."},
+  {q:"Quelle jointure garde tous les éléments de gauche ?", opts:["INNER JOIN","LEFT JOIN","CROSS JOIN","Aucune"], a:1, exp:"LEFT JOIN garde toutes les lignes de la table de gauche."},
+  {q:"Quelle clause filtre les groupes ?", opts:["WHERE","ORDER BY","HAVING","GROUP BY"], a:2, exp:"HAVING filtre après le GROUP BY."},
+  {q:"Quelle fonction calcule une moyenne ?", opts:["SUM","COUNT","AVG","MEAN"], a:2, exp:"AVG(col) calcule la moyenne."},
+  {q:"Comment écrire une chaîne de texte en SQL ?", opts:["\"texte\"","'texte'","[texte]","{texte}"], a:1, exp:"Les chaînes s'écrivent entre apostrophes simples en SQL standard."},
+  {q:"Quelle commande ajoute des lignes ?", opts:["INSERT","UPDATE","CREATE","ADD"], a:0, exp:"INSERT INTO ajoute des lignes."},
+  {q:"Le symbole % dans LIKE signifie ?", opts:["Un caractère","Zéro caractère","Plusieurs caractères","Un chiffre"], a:2, exp:"% = n'importe quelle suite de caractères."},
+  {q:"LIMIT 5 fait quoi ?", opts:["Garde 5 lignes","Supprime 5 lignes","Ajoute 5 lignes","Trie 5 lignes"], a:0, exp:"LIMIT 5 garde seulement 5 lignes."},
+  {q:"Quel opérateur vérifie NULL ?", opts:["= NULL","== NULL","IS NULL","NULL()"], a:2, exp:"On utilise IS NULL (pas = NULL)."},
+  {q:"DISTINCT fait quoi ?", opts:["Supprime les doublons","Trie les lignes","Groupe les lignes","Compte les lignes"], a:0, exp:"DISTINCT supprime les valeurs en double."},
+  {q:"Quelle jointure produit toutes les combinaisons ?", opts:["INNER JOIN","LEFT JOIN","CROSS JOIN","RIGHT JOIN"], a:2, exp:"CROSS JOIN fait le produit cartésien."},
+  {q:"Quelle fonction retourne le maximum ?", opts:["TOP","MAX","HIGH","GREATEST"], a:1, exp:"MAX(col) retourne la valeur maximale."}
+];
+
+const BUG_QS = [
+  {sql:"SELECT nom FROM products", opts:["La colonne s'appelle 'name', pas 'nom'","Il manque WHERE","Il faut SELECT *","Rien à signaler"], a:0, exp:"La colonne s'appelle bien 'name'."},
+  {sql:"SELECT * FROM products WHERE price == 100", opts:["== n'existe pas en SQL, c'est =","Il faut SELECT name","price n'existe pas","Rien à signaler"], a:0, exp:"En SQL on compare avec = (pas ==)."},
+  {sql:"SELECT name price FROM products", opts:["Il manque la virgule entre name et price","Il faut FROM","Il faut WHERE","Rien à signaler"], a:0, exp:"Il faut SELECT name, price FROM products."},
+  {sql:"SELEC * FROM products", opts:["SELEC est une faute, c'est SELECT","Il manque WHERE","Il faut SELECT name","Rien à signaler"], a:0, exp:"Le mot-clé est SELECT."},
+  {sql:"SELECT COUNT(name FROM products", opts:["Il manque une parenthèse fermante","Il faut SELECT *","Il manque FROM","Rien à signaler"], a:0, exp:"COUNT(name) doit être fermé par )."},
+  {sql:"SELECT * FROM products WHERE price BETWEEN 100", opts:["Il manque AND et la borne supérieure","Il faut ORDER BY","Il faut GROUP BY","Rien à signaler"], a:0, exp:"BETWEEN a AND b — deux bornes obligatoires."},
+  {sql:"SELECT * FROM products WHERE category = Audio", opts:["Audio doit être entre apostrophes","Il faut SELECT name","Il manque FROM","Rien à signaler"], a:0, exp:"'Audio' entre apostrophes simples."},
+  {sql:"SELECT name AS FROM products", opts:["Il manque le nom de l'alias","Il faut SELECT *","Il manque WHERE","Rien à signaler"], a:0, exp:"AS doit être suivi d'un alias : name AS produit."},
+  {sql:"SELECT DISTINCT name, category FROM products GROUP name", opts:["Il faut GROUP BY, pas GROUP name","Il faut SELECT *","Il manque WHERE","Rien à signaler"], a:0, exp:"La clause est GROUP BY colonne."},
+  {sql:"SELECT * FROM products ORDER price ASC", opts:["Il manque BY après ORDER","Il faut WHERE","Il faut GROUP BY","Rien à signaler"], a:0, exp:"La clause est ORDER BY, pas ORDER seul."}
+];
+
+const OUTPUT_QS = [
+  {sql:"SELECT COUNT(*) FROM products WHERE category = 'Audio'", opts:["3","4","15","0"], a:1, exp:"Il y a 4 produits Audio : Casque audio, Enceinte Bluetooth, Micro de studio, Casque gamer."},
+  {sql:"SELECT name FROM products WHERE price > 1000", opts:["Laptop Pro","Laptop Pro, Tablette 10 pouces","Aucun","Tous"], a:0, exp:"Seul Laptop Pro dépasse 1000 (1299.99)."},
+  {sql:"SELECT COUNT(DISTINCT country) FROM customers", opts:["10","13","3","0"], a:0, exp:"10 pays distincts parmi les 13 clients (France apparaît 3 fois, Italie 2 fois)."},
+  {sql:"SELECT MAX(price) FROM products", opts:["1299.99","449.00","199.99","300"], a:0, exp:"Laptop Pro à 1299.99 est le plus cher."},
+  {sql:"SELECT COUNT(*) FROM orders WHERE customer_id = 1", opts:["4","1","3","0"], a:0, exp:"Alice Martin a 4 commandes (ids 1, 3, 12, 20)."},
+  {sql:"SELECT COUNT(*) FROM products", opts:["15","13","30","10"], a:0, exp:"Il y a 15 produits dans la table."},
+  {sql:"SELECT name FROM products WHERE stock = 300", opts:["Câble USB-C","Laptop Pro","Souris sans fil","Aucun"], a:0, exp:"Le Câble USB-C a un stock de 300."},
+  {sql:"SELECT MIN(price) FROM products", opts:["14.99","29.99","0","9.99"], a:0, exp:"Le Câble USB-C à 14.99 est le moins cher."},
+  {sql:"SELECT COUNT(*) FROM customers WHERE country = 'France'", opts:["3","2","13","1"], a:0, exp:"Alice, Bob et Jules = 3 clients français."},
+  {sql:"SELECT COUNT(*) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.country = 'Italie'", opts:["4","2","1","0"], a:0, exp:"Carla (2 commandes) + Luca (2) = 4."}
+];
+
+const ARCADE = {
+  quiz:   {name:'Quiz Éclair',      emoji:'🎯', desc:'15 questions SQL, choisis la bonne réponse.', data:QUIZ_QS, xpPer:2},
+  bug:    {name:'Chasse au Bug',    emoji:'🔍', desc:"Trouve l'erreur dans chaque requête SQL.", data:BUG_QS, xpPer:3},
+  output: {name:'Devine la Sortie', emoji:'🧠', desc:'Prédis le résultat de la requête.',          data:OUTPUT_QS, xpPer:3},
+  speed:  {name:'Speed Run',        emoji:'⚡', desc:'60 secondes pour un max de bonnes réponses.', data:[...QUIZ_QS, ...OUTPUT_QS], xpPer:2}
+};
+
+/* =========================================================
+   4. BADGES
+   ========================================================= */
+const BADGES = [
+  {id:'first',   icon:'🩸', name:'Premier sang',    desc:'Résoudre 1 exercice',     check:s=>totalSolved()>=1},
+  {id:'ten',     icon:'🔟', name:'Dix sur dix',     desc:'Résoudre 10 exercices',   check:s=>totalSolved()>=10},
+  {id:'thirty',  icon:'🏆', name:'Trente glorieuses',desc:'Résoudre 30 exercices',  check:s=>totalSolved()>=30},
+  {id:'w1',      icon:'🌅', name:'Éveillé',         desc:'Terminer le Monde 1',     check:s=>worldDone('w1')},
+  {id:'w2',      icon:'📊', name:'Ordonnateur',     desc:'Terminer le Monde 2',     check:s=>worldDone('w2')},
+  {id:'w3',      icon:'🔗', name:'Lieur de tables', desc:'Terminer le Monde 3',     check:s=>worldDone('w3')},
+  {id:'perfect', icon:'💎', name:'Sans faute',      desc:'Une leçon 3 étoiles',     check:s=>Object.values(s.lessons).some(l=>l.stars===3)},
+  {id:'streak3', icon:'🔥', name:'Série de 3',      desc:'3 jours consécutifs',     check:s=>s.streak.count>=3},
+  {id:'xp500',   icon:'⚡', name:'500 XP',          desc:'Atteindre 500 XP',        check:s=>s.xp>=500},
+  {id:'arcade',  icon:'🕹️', name:'Gamer',           desc:'Jouer à 1 jeu arcade',    check:s=>(s.scores.quiz||0)>0||(s.scores.bug||0)>0||(s.scores.output||0)>0||(s.scores.speed||0)>0},
+  {id:'perfectq',icon:'🎯', name:'Sniper',          desc:'Quiz parfait 15/15',      check:s=>s.scores.quiz>=15},
+  {id:'speed20', icon:'💨', name:'Speed Demon',     desc:'20+ en Speed Run',        check:s=>s.scores.speed>=20},
+  {id:'master',  icon:'👑', name:'Maître SQL',      desc:'Terminer tout le parcours',check:s=>allDone()}
+];
+
+/* =========================================================
+   5. STATE
+   ========================================================= */
+const SAVE_KEY = 'sqlquest_v1';
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      s.ex = s.ex || {}; s.lessons = s.lessons || {}; s.badges = s.badges || [];
+      s.streak = s.streak || {count:0, last:null}; s.xp = s.xp || 0;
+      s.scores = s.scores || {quiz:0, bug:0, output:0, speed:0};
+      s.tts = s.tts !== false;
+      return s;
+    }
+  }catch(e){}
+  return {xp:0, ex:{}, lessons:{}, badges:[], streak:{count:0,last:null},
+          scores:{quiz:0,bug:0,output:0,speed:0}, tts:true};
+}
+function saveState(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
+function touchStreak(){
+  const t = todayStr();
+  if(state.streak.last === t) return;
+  state.streak.count = (state.streak.last === yesterdayStr()) ? state.streak.count + 1 : 1;
+  state.streak.last = t;
+  saveState();
+  if(state.streak.count >= 2) toast('🔥 Série de ' + state.streak.count + ' jours !');
+}
+function totalSolved(){ return Object.keys(state.ex).length; }
+function lessonDone(id){
+  const l = findLesson(id);
+  return l.exercises.every((_,i)=> state.ex[id+':'+i] !== undefined);
+}
+function worldDone(wid){
+  const w = CURRICULUM.find(w=>w.id===wid);
+  return w.lessons.every(l=>lessonDone(l.id));
+}
+function allDone(){ return CURRICULUM.every(w=>worldDone(w.id)); }
+function findLesson(id){
+  for(const w of CURRICULUM) for(const l of w.lessons) if(l.id===id) return l;
+  return null;
+}
+function lessonStars(id){
+  const l = findLesson(id); let sum=0, n=0;
+  l.exercises.forEach((_,i)=>{ const st = state.ex[id+':'+i]; if(st!==undefined){sum+=st;n++;} });
+  return n ? Math.round(sum/n) : 0;
+}
+function levelInfo(){
+  const lvl = Math.floor(state.xp/100)+1;
+  const base = (lvl-1)*100;
+  return {level:lvl, into:state.xp-base, need:100, pct:Math.min(100,((state.xp-base)/100)*100)};
+}
+
+/* =========================================================
+   6. TTS
+   ========================================================= */
+let ttsVoice = null, ttsUnlocked = false;
+function initTTS(){
+  if(!('speechSynthesis' in window)) return;
+  const refresh = ()=>{
+    const voices = window.speechSynthesis.getVoices();
+    if(voices.length > 0)
+      ttsVoice = voices.find(v=>v.lang.startsWith('fr')) || voices[0];
+  };
+  refresh();
+  window.speechSynthesis.onvoiceschanged = refresh;
+}
+function unlockTTS(){
+  if(!('speechSynthesis' in window) || ttsUnlocked) return;
+  try{
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+    ttsUnlocked = true;
+  }catch(e){}
+}
+function speak(text, opts={}){
+  if(!state.tts) return;
+  if(!('speechSynthesis' in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    const clean = String(text).replace(/<[^>]+>/g,' ').replace(/&[a-z]+;/gi,' ').replace(/\s+/g,' ').trim();
+    if(!clean) return;
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = 'fr-FR';
+    u.rate = opts.rate || 1;
+    u.pitch = 1;
+    if(ttsVoice) u.voice = ttsVoice;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function toggleTTS(){
+  state.tts = !state.tts;
+  if(!state.tts) window.speechSynthesis.cancel();
+  saveState();
+  updateTTSBtn();
+  toast(state.tts ? '🔊 Voix activée' : '🔇 Voix désactivée');
+}
+function updateTTSBtn(){
+  const b = document.getElementById('tts-btn');
+  if(b){ b.textContent = state.tts ? '🔊' : '🔇'; b.classList.toggle('off', !state.tts); }
+}
+function speakEl(sel){
+  if(!state.tts){ toast('🔇 Voix désactivée — clique sur 🔊 en haut'); return; }
+  unlockTTS();
+  const el = document.querySelector(sel);
+  if(!el) return;
+  speak(el.textContent);
+  const btn = document.querySelector(`[data-speak="${sel}"]`);
+  if(btn){
+    btn.classList.add('speaking');
+    setTimeout(()=>btn.classList.remove('speaking'), 1500);
+  }
+}
+
+/* =========================================================
+   7. SQL ENGINE
+   ========================================================= */
+let db = null, expectedCache = {};
+async function initDB(){
+  const SQL = await initSqlJs({
+    locateFile: f => 'https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/' + f
+  });
+  db = new SQL.Database();
+  db.run(DB_SQL);
+}
+function execSQL(sql){
+  const res = db.exec(sql);
+  if(!res || res.length === 0) return {columns:[], values:[]};
+  return res[res.length-1];
+}
+function normVal(v){
+  if(v === null || v === undefined) return '\u0000NULL';
+  if(typeof v === 'number'){
+    if(Number.isInteger(v)) return String(v);
+    return String(Math.round(v*100)/100);
+  }
+  if(v instanceof Uint8Array) return '[blob]';
+  return String(v);
+}
+function normalize(res, ordered){
+  const rows = res.values.map(r => r.map(normVal));
+  if(!ordered) rows.sort((a,b)=>JSON.stringify(a)<JSON.stringify(b)?-1:1);
+  return {cols:res.columns.length, rows, colNames:res.columns};
+}
+function resultsEqual(a, b){
+  if(a.cols !== b.cols || a.rows.length !== b.rows.length) return false;
+  for(let i=0;i<a.rows.length;i++)
+    for(let j=0;j<a.rows[i].length;j++)
+      if(a.rows[i][j] !== b.rows[i][j]) return false;
+  return true;
+}
+function getExpected(lessonId, idx){
+  const key = lessonId+':'+idx;
+  if(expectedCache[key]) return expectedCache[key];
+  const l = findLesson(lessonId); const ex = l.exercises[idx];
+  return expectedCache[key] = normalize(execSQL(ex.solution), !!ex.ordered);
+}
+
+/* =========================================================
+   8. UI HELPERS
+   ========================================================= */
+const app = document.getElementById('app');
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function updateTopbar(){
+  const li = levelInfo();
+  document.getElementById('s-streak').textContent = state.streak.count;
+  document.getElementById('s-xp').textContent = state.xp;
+  document.getElementById('s-level').textContent = li.level;
+  document.getElementById('xp-lvl-label').textContent = 'Niveau ' + li.level;
+  document.getElementById('xp-next-label').textContent = li.into + ' / ' + li.need;
+  document.getElementById('xp-fill').style.width = li.pct + '%';
+  updateTTSBtn();
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-speak]');
+  if(t){ e.preventDefault(); speakEl(t.getAttribute('data-speak')); }
+});
+
+/* =========================================================
+   9. HOME
+   ========================================================= */
+function renderHome(){
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  let html = `<div class="hero">
+    <h1>Apprends <em>SQL</em> en jouant.</h1>
+    <p>Un vrai moteur SQL dans ton navigateur. Des quêtes, des boss, des mini-jeux, et la voix qui t'explique tout.</p>
+  </div>`;
+
+  html += `<div class="world clickable" onclick="renderArcade()">
+    <div class="world-head">
+      <div class="world-emoji">🎮</div>
+      <div>
+        <div class="world-title">Arcade</div>
+        <div class="world-desc">4 mini-jeux : Quiz, Chasse au Bug, Devine la Sortie, Speed Run</div>
+      </div>
+      <div class="world-prog">Records<br><b>${Math.max(state.scores.quiz,state.scores.bug,state.scores.output)}</b></div>
+    </div>
+  </div>`;
+
+  CURRICULUM.forEach(world=>{
+    const doneCount = world.lessons.filter(l=>lessonDone(l.id)).length;
+    const pct = Math.round(doneCount/world.lessons.length*100);
+    html += `<div class="world">
+      <div class="world-head">
+        <div class="world-emoji">${world.emoji}</div>
+        <div>
+          <div class="world-title">${world.title}</div>
+          <div class="world-desc">${world.desc}</div>
+        </div>
+        <div class="world-prog"><b>${doneCount}/${world.lessons.length}</b><br>${pct}%</div>
+      </div><div class="lessons">`;
+    world.lessons.forEach((lesson, i)=>{
+      const unlocked = i === 0 || lessonDone(world.lessons[i-1].id);
+      const done = lessonDone(lesson.id);
+      const stars = lessonStars(lesson.id);
+      const starStr = done ? '★'.repeat(stars) + '☆'.repeat(3-stars) : '☆☆☆';
+      html += `<div class="lesson ${unlocked?'':'locked'} ${done?'done':''}"
+                    onclick="${unlocked?`openLesson('${lesson.id}')`:''}">
+        <div class="lesson-idx">${unlocked? (done?'✓':'▶') : '🔒'}</div>
+        <div class="lesson-name">${lesson.title}</div>
+        <div class="lesson-stars">${starStr}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  html += `<div class="badges-sec"><h2>🏅 Badges</h2><div class="badges">`;
+  BADGES.forEach(b=>{
+    const on = state.badges.includes(b.id);
+    html += `<div class="badge ${on?'on':'off'}" title="${esc(b.desc)}">
+      <span>${b.icon}</span><span>${b.name}</span></div>`;
+  });
+  html += `</div></div>`;
+
+  html += `<div style="text-align:center;margin-top:40px">
+    <button class="back" onclick="showSchema()">📋 Voir le schéma de la base</button>
+  </div>`;
+
+  app.innerHTML = html;
+  updateTopbar();
+}
+
+/* =========================================================
+   10. LESSON VIEW
+   ========================================================= */
+let current = {lessonId:null, idx:0, hintsUsed:false, attempts:0};
+
+function openLesson(lessonId){
+  unlockTTS();
+  current = {lessonId, idx:0, hintsUsed:false, attempts:0};
+  renderLesson();
+}
+
+function renderLesson(){
+  const lesson = findLesson(current.lessonId);
+  const ex = lesson.exercises[current.idx];
+  const total = lesson.exercises.length;
+
+  let dots = '';
+  lesson.exercises.forEach((_,i)=>{
+    let cls = 'dot';
+    if(i === current.idx) cls += ' cur';
+    else if(state.ex[current.lessonId+':'+i] !== undefined) cls += ' ok';
+    dots += `<div class="${cls}"></div>`;
+  });
+
+  app.innerHTML = `
+    <button class="back" onclick="renderHome()">← Retour à la carte</button>
+
+    <div class="theory">
+      <button class="speak-fab" data-speak="#theory-text" title="Écouter">🔊</button>
+      <div id="theory-text">
+        ${lesson.theory}
+        <p style="color:var(--muted);font-size:.8rem;margin-top:14px">
+          Tables : <code>products</code>, <code>customers</code>, <code>orders</code>
+          — <a href="#" onclick="showSchema();return false;">voir le schéma</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="theory">
+      <div class="ex-head">
+        <strong>Exercice ${current.idx+1} / ${total}</strong>
+        <div class="ex-dots">${dots}</div>
+      </div>
+      <div class="prompt" id="prompt-text">${ex.prompt}</div>
+      <button class="speak-fab" data-speak="#prompt-text" title="Écouter">🔊</button>
+
+      <div class="editor-wrap" style="margin-top:14px">
+        <div class="lineno" id="lineno">1</div>
+        <textarea id="editor" spellcheck="false" autocomplete="off">${esc(ex.starter)}</textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-run" onclick="runOnly()">▶ Exécuter</button>
+        <button class="btn btn-check" onclick="checkAnswer()">✓ Valider</button>
+        <button class="btn btn-hint" onclick="showHint()">💡 Indice</button>
+      </div>
+      <div class="hintbox" id="hintbox"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="results" id="results"></div>
+    </div>
+  `;
+
+  const ta = document.getElementById('editor');
+  ta.focus();
+  ta.addEventListener('input', updateLineNumbers);
+  ta.addEventListener('keydown', e=>{
+    if(e.key === 'Tab'){
+      e.preventDefault();
+      const s = ta.selectionStart, epos = ta.selectionEnd;
+      ta.value = ta.value.slice(0,s) + '  ' + ta.value.slice(epos);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+      updateLineNumbers();
+    }
+    if((e.ctrlKey||e.metaKey) && e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }
+  });
+  updateLineNumbers();
+  updateTopbar();
+  setTimeout(()=>{ if(state.tts) speak(ex.prompt); }, 250);
+}
+
+function updateLineNumbers(){
+  const ta = document.getElementById('editor');
+  const ln = document.getElementById('lineno');
+  if(!ta || !ln) return;
+  const n = ta.value.split('\n').length;
+  ln.innerHTML = Array.from({length:n}, (_,i)=>i+1).join('<br>');
+}
+
+function showHint(){
+  const l = findLesson(current.lessonId);
+  const ex = l.exercises[current.idx];
+  if(!ex.hint) return;
+  const box = document.getElementById('hintbox');
+  box.textContent = '💡 ' + ex.hint;
+  box.classList.add('show');
+  current.hintsUsed = true;
+  speak('Indice : ' + ex.hint);
+}
+
+function renderResults(res){
+  const box = document.getElementById('results');
+  if(res.values.length === 0 && res.columns.length === 0){
+    box.innerHTML = `<div class="results-bar"><span>Aucune ligne retournée</span></div>`;
+    box.classList.add('show'); return;
+  }
+  const shown = res.values.slice(0, 50);
+  let html = `<div class="results-bar"><span>${res.values.length} ligne(s)</span>
+    ${res.values.length > 50 ? `<span>limité à 50</span>` : ''}</div>
+    <div class="table-scroll"><table><thead><tr>`;
+  res.columns.forEach(c=> html += `<th>${esc(c)}</th>`);
+  html += `</tr></thead><tbody>`;
+  shown.forEach(row=>{
+    html += '<tr>';
+    row.forEach(v=>{
+      const isNull = v === null || v === undefined;
+      html += `<td class="${isNull?'null':''}">${isNull?'NULL':esc(normVal(v).replace('\u0000NULL','NULL'))}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += `</tbody></table></div>`;
+  box.innerHTML = html;
+  box.classList.add('show');
+}
+
+function runOnly(){
+  const sql = document.getElementById('editor').value.trim();
+  const fb = document.getElementById('feedback');
+  const box = document.getElementById('results');
+  fb.className = 'feedback'; box.classList.remove('show');
+  if(!sql){ showFb('err', "❌ Écris une requête SQL avant d'exécuter."); return; }
+  try{
+    const res = execSQL(sql);
+    renderResults(res);
+    if(res.values.length === 0) showFb('info', "ℹ️ La requête s'exécute mais ne renvoie aucune ligne.");
+  }catch(err){ showFb('err', '❌ Erreur SQL : ' + err.message); }
+}
+function showFb(type, msg){
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback show ' + type;
+  fb.innerHTML = msg;
+}
+
+function checkAnswer(){
+  const sql = document.getElementById('editor').value.trim();
+  const l = findLesson(current.lessonId);
+  const ex = l.exercises[current.idx];
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback';
+  if(!sql){ showFb('err', "❌ Écris une requête SQL d'abord."); return; }
+
+  let userRes;
+  try{ userRes = execSQL(sql); }
+  catch(err){ showFb('err', '❌ Erreur SQL : ' + err.message); return; }
+
+  renderResults(userRes);
+  current.attempts++;
+  const userNorm = normalize(userRes, !!ex.ordered);
+  const expNorm = getExpected(current.lessonId, current.idx);
+
+  if(resultsEqual(userNorm, expNorm)){
+    const stars = current.hintsUsed ? (current.attempts === 1 ? 2 : 1) : (current.attempts === 1 ? 3 : 2);
+    const key = current.lessonId + ':' + current.idx;
+    const already = state.ex[key] !== undefined;
+    if(!already){
+      state.ex[key] = stars;
+      state.xp += 10 + stars * 5;
+      touchStreak();
+      checkBadges();
+      saveState();
+      updateTopbar();
+    }
+    showFb('ok', `🎉 <b>Bravo !</b> ${'★'.repeat(stars)}${'☆'.repeat(3-stars)} — +${already?0:10+stars*5} XP`);
+    speak(current.attempts === 1 ? 'Bravo, parfait !' : 'Bravo !');
+    const actions = document.querySelector('.actions');
+    actions.innerHTML = `<button class="btn btn-next" onclick="nextExercise()">Continuer →</button>`;
+    document.getElementById('editor').disabled = true;
+    document.getElementById('editor').style.opacity = '.65';
+  }else{
+    let msg = "❌ Ce n'est pas encore ça.";
+    if(userNorm.cols !== expNorm.cols) msg += ` Tu renvoies <b>${userNorm.cols}</b> colonne(s), il en faut <b>${expNorm.cols}</b>.`;
+    else if(userNorm.rows.length !== expNorm.rows.length) msg += ` Tu renvoies <b>${userNorm.rows.length}</b> ligne(s), il en faut <b>${expNorm.rows.length}</b>.`;
+    else msg += ' Même nombre de lignes, mais certaines valeurs diffèrent.';
+    showFb('err', msg + '<br><span style="opacity:.75;font-size:.85em">Compare ton résultat au résultat attendu.</span>');
+    speak("Ce n'est pas encore ça. Réessaie.");
+  }
+}
+
+function nextExercise(){
+  const l = findLesson(current.lessonId);
+  if(current.idx < l.exercises.length - 1){
+    current.idx++; current.hintsUsed = false; current.attempts = 0;
+    renderLesson();
+  }else finishLesson();
+}
+
+function finishLesson(){
+  const l = findLesson(current.lessonId);
+  const stars = lessonStars(current.lessonId);
+  const prev = state.lessons[l.id];
+  if(!prev || prev.stars < stars){
+    state.lessons[l.id] = {stars, completedAt: Date.now()};
+    saveState();
+  }
+  checkBadges();
+  app.innerHTML = `<div class="complete">
+    <div class="big">🏁</div>
+    <h2>Leçon terminée !</h2>
+    <div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
+    <p>${l.title}</p>
+    <button class="btn btn-check" onclick="renderHome()">Retour à la carte</button>
+  </div>`;
+  speak('Leçon terminée ! Félicitations.');
+  updateTopbar();
+}
+
+/* =========================================================
+   11. ARCADE
+   ========================================================= */
+let game = null;
+
+function renderArcade(){
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  let html = `<button class="back" onclick="renderHome()">← Carte</button>
+    <div class="hero" style="margin-bottom:24px">
+      <h1>🎮 <em>Arcade</em></h1>
+      <p>Quatre mini-jeux pour t'entraîner. Les questions sont lues à voix haute.</p>
+    </div>`;
+  Object.entries(ARCADE).forEach(([id, g])=>{
+    const best = state.scores[id] || 0;
+    const isTime = id === 'speed';
+    html += `<div class="world">
+      <div class="world-head">
+        <div class="world-emoji">${g.emoji}</div>
+        <div>
+          <div class="world-title">${g.name}</div>
+          <div class="world-desc">${g.desc}</div>
+        </div>
+        <div class="world-prog">Record<br><b>${best}${isTime?'':'/'+g.data.length}</b></div>
+      </div>
+      <button class="btn btn-check" onclick="startGame('${id}')" style="margin-top:16px">Jouer →</button>
+    </div>`;
+  });
+  app.innerHTML = html;
+  updateTopbar();
+}
+
+function startGame(id){
+  unlockTTS();
+  if(id === 'speed'){
+    game = {type:'speed', id, score:0, idx:0, total:0, pool:shuffle([...ARCADE.speed.data]), timeLeft:60, answered:false};
+    renderSpeedGame();
+    game.timer = setInterval(()=>{
+      game.timeLeft--;
+      if(game.timeLeft <= 0) endGame();
+      else if(game.timeLeft <= 10) updateSpeedTimer();
+    }, 1000);
+  }else{
+    game = {type:id, id, score:0, idx:0, total:ARCADE[id].data.length, answered:false};
+    renderArcadeQuestion();
+  }
+}
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function renderArcadeQuestion(){
+  const g = ARCADE[game.id];
+  const q = g.data[game.idx];
+  game.answered = false;
+
+  let dots = '';
+  g.data.forEach((_,i)=>{
+    let cls = 'dot';
+    if(i === game.idx) cls += ' cur';
+    else if(i < game.idx) cls += ' ok';
+    dots += `<div class="${cls}"></div>`;
+  });
+
+  const qText = q.q || "Quel est le résultat de cette requête ?";
+  const qBody = q.sql ? `<div class="quiz-sql" id="quiz-sql">${esc(q.sql)}</div>` : '';
+
+  app.innerHTML = `<button class="back" onclick="quitGame()">← Arcade</button>
+    <div class="theory">
+      <div class="ex-head">
+        <strong>${game.idx+1} / ${g.data.length}</strong>
+        <div class="ex-dots">${dots}</div>
+      </div>
+      <div class="prompt" id="qtext">${esc(qText)}</div>
+      <button class="speak-fab" data-speak="#full-q" title="Écouter">🔊</button>
+      <div id="full-q" style="display:none">${esc(qText)} ${q.sql ? '. Requête : ' + esc(q.sql) : ''}</div>
+      ${qBody}
+      <div id="opts">${q.opts.map((o,i)=>`<button class="opt-btn" onclick="answerArcade(${i})">${String.fromCharCode(65+i)}. ${esc(o)}</button>`).join('')}</div>
+      <div class="feedback" id="arcade-fb"></div>
+    </div>`;
+  updateTopbar();
+  setTimeout(()=>{ if(state.tts) speak((qText) + (q.sql ? '. ' + q.sql : '')); }, 200);
+}
+
+function answerArcade(pick){
+  if(game.answered) return;
+  game.answered = true;
+  const g = ARCADE[game.id];
+  const q = g.data[game.idx];
+  const btns = document.querySelectorAll('.opt-btn');
+  const fb = document.getElementById('arcade-fb');
+
+  btns.forEach((b,i)=>{
+    b.disabled = true;
+    if(i === q.a) b.classList.add('correct');
+    if(i === pick && pick !== q.a) b.classList.add('wrong');
+  });
+
+  if(pick === q.a){
+    game.score++;
+    state.xp += g.xpPer;
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `✅ <b>Bonne réponse !</b> +${g.xpPer} XP<br><span style="opacity:.85;font-size:.88em">${esc(q.exp)}</span>`;
+    speak('Bonne réponse. ' + q.exp);
+  }else{
+    fb.className = 'feedback show err';
+    fb.innerHTML = `❌ La bonne réponse était <b>${String.fromCharCode(65+q.a)}</b>.<br><span style="opacity:.85;font-size:.88em">${esc(q.exp)}</span>`;
+    speak('Raté. La bonne réponse était ' + q.opts[q.a] + '. ' + q.exp);
+  }
+
+  saveState();
+  updateTopbar();
+  setTimeout(()=>{
+    game.idx++;
+    if(game.idx >= g.data.length) endGame();
+    else renderArcadeQuestion();
+  }, 2400);
+}
+
+function renderSpeedGame(){
+  const q = game.pool[0];
+  const qText = q.q || "Quel est le résultat ?";
+  const qBody = q.sql ? `<div class="quiz-sql">${esc(q.sql)}</div>` : '';
+  app.innerHTML = `<button class="back" onclick="quitGame()">← Arcade</button>
+    <div class="theory">
+      <div class="ex-head">
+        <strong>Score : ${game.score}</strong>
+        <div class="timer" id="timer">⏱ ${game.timeLeft}s</div>
+      </div>
+      <div class="prompt">${esc(qText)}</div>
+      <div id="full-q" style="display:none">${esc(qText)} ${q.sql ? '. Requête : ' + esc(q.sql) : ''}</div>
+      ${qBody}
+      <div id="opts">${q.opts.map((o,i)=>`<button class="opt-btn" onclick="answerSpeed(${i})">${String.fromCharCode(65+i)}. ${esc(o)}</button>`).join('')}</div>
+      <div class="feedback" id="arcade-fb"></div>
+    </div>`;
+  updateTopbar();
+  setTimeout(()=>{ if(state.tts) speak((qText) + (q.sql ? '. ' + q.sql : ''), {rate:1.1}); }, 150);
+}
+
+function updateSpeedTimer(){
+  const t = document.getElementById('timer');
+  if(t){
+    t.textContent = '⏱ ' + game.timeLeft + 's';
+    if(game.timeLeft <= 10) t.classList.add('warn');
+  }
+}
+
+function answerSpeed(pick){
+  if(!game || game.answered) return;
+  game.answered = true;
+  const q = game.pool[0];
+  const btns = document.querySelectorAll('.opt-btn');
+  const fb = document.getElementById('arcade-fb');
+  btns.forEach((b,i)=>{
+    b.disabled = true;
+    if(i === q.a) b.classList.add('correct');
+    if(i === pick && pick !== q.a) b.classList.add('wrong');
+  });
+  if(pick === q.a){
+    game.score++;
+    state.xp += ARCADE.speed.xpPer;
+    fb.className = 'feedback show ok';
+    fb.textContent = `✅ +${ARCADE.speed.xpPer} XP`;
+  }else{
+    fb.className = 'feedback show err';
+    fb.textContent = `❌ Bonne réponse : ${String.fromCharCode(65+q.a)}`;
+  }
+  updateTopbar();
+  saveState();
+  setTimeout(()=>{
+    if(game.timeLeft <= 0) return;
+    game.pool.shift();
+    if(game.pool.length === 0) game.pool = shuffle([...ARCADE.speed.data]);
+    game.answered = false;
+    renderSpeedGame();
+  }, 700);
+}
+
+function endGame(){
+  if(!game) return;
+  if(game.timer){ clearInterval(game.timer); game.timer = null; }
+  const g = ARCADE[game.id];
+  const best = state.scores[game.id] || 0;
+  const newBest = game.score > best;
+  if(newBest){
+    state.scores[game.id] = game.score;
+    saveState();
+  }
+  checkBadges();
+  const max = game.id === 'speed' ? '∞' : g.data.length;
+  const pct = game.id === 'speed' ? Math.min(100, game.score*5) : Math.round(game.score/g.data.length*100);
+  app.innerHTML = `<div class="complete">
+    <div class="big">${game.score >= (game.id==='speed'?15:g.data.length) ? '🏆' : game.score > 0 ? '🎉' : '💪'}</div>
+    <h2>${g.name} terminé !</h2>
+    <div class="score-big">${game.score} / ${max}</div>
+    <p>${pct}% de réussite${newBest?' · <b style="color:var(--gold)">🎯 Nouveau record !</b>':''}</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-check" onclick="startGame('${game.id}')">Rejouer</button>
+      <button class="btn btn-run" onclick="renderArcade()">← Arcade</button>
+    </div>
+  </div>`;
+  speak(`Partie terminée. Score : ${game.score} sur ${max}. ${newBest ? 'Nouveau record !' : ''}`);
+  updateTopbar();
+}
+
+function quitGame(){
+  if(game && game.timer){ clearInterval(game.timer); game.timer = null; }
+  game = null;
+  renderArcade();
+}
+
+/* =========================================================
+   12. BADGES / MODAL / RESET
+   ========================================================= */
+function checkBadges(){
+  BADGES.forEach(b=>{
+    if(!state.badges.includes(b.id) && b.check(state)){
+      state.badges.push(b.id);
+      toast(`${b.icon} Badge débloqué : ${b.name}`);
+    }
+  });
+  saveState();
+}
+
+function showSchema(){
+  const schema = `CREATE TABLE products (
+  id INTEGER PRIMARY KEY, name TEXT, category TEXT, price REAL, stock INTEGER
+);
+CREATE TABLE customers (
+  id INTEGER PRIMARY KEY, name TEXT, city TEXT, country TEXT
+);
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY, customer_id INTEGER, product_id INTEGER,
+  quantity INTEGER, order_date TEXT
+);`;
+  const div = document.createElement('div');
+  div.className = 'modal-bg';
+  div.onclick = e => { if(e.target === div) div.remove(); };
+  div.innerHTML = `<div class="modal">
+    <h3>📋 Schéma de la base</h3>
+    <pre>${esc(schema)}</pre>
+    <p style="color:var(--muted);font-size:.85rem">15 produits · 13 clients · 30 commandes</p>
+    <button class="btn btn-run" onclick="this.closest('.modal-bg').remove()">Fermer</button>
+  </div>`;
+  document.body.appendChild(div);
+}
+
+function resetProgress(){
+  if(!confirm('Effacer toute ta progression ? (leçons, badges, records arcade)')) return;
+  localStorage.removeItem(SAVE_KEY);
+  state = loadState();
+  expectedCache = {};
+  renderHome();
+  toast('Progression réinitialisée');
+}
+
+/* =========================================================
+   13. BOOT
+   ========================================================= */
+(async function boot(){
+  initTTS();
+  try{
+    await initDB();
+    CURRICULUM.forEach(w=>w.lessons.forEach(l=>l.exercises.forEach((_,i)=>{
+      try{ getExpected(l.id, i); }catch(e){ console.error('Solution invalide', l.id, i, e); }
+    })));
+    document.getElementById('loader').style.display = 'none';
+    updateTTSBtn();
+    renderHome();
+  }catch(err){
+    document.getElementById('loader').innerHTML =
+      `<p style="color:#dc2626">❌ Impossible de charger le moteur SQL.<br>${esc(err.message)}</p>
+       <p style="color:#64748b;font-size:.8rem;margin-top:10px">Vérifie ta connexion internet.</p>`;
+  }
+})();
+</script>
+</body>
+</html>
