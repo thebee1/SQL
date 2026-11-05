@@ -4,446 +4,288 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
 <meta name="theme-color" content="#ffffff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="format-detection" content="telephone=no">
 <title>SQL Quest — Apprends SQL en jouant</title>
 <script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/sql-wasm.js"></script>
 <style>
-  :root{
-    --bg:#ffffff; --bg2:#f4f6fb; --card:#ffffff; --card2:#f1f5f9;
-    --border:#e2e8f0; --border-strong:#cbd5e1;
-    --text:#1e293b; --muted:#64748b;
-    --accent:#7c5cff; --accent2:#0ea5e9; --gold:#f59e0b;
-    --green:#16a34a; --red:#dc2626; --code:#f8fafc;
-    --code-text:#1e293b;
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-left: env(safe-area-inset-left, 0px);
-    --safe-right: env(safe-area-inset-right, 0px);
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
-  body{
-    background: linear-gradient(180deg, #ffffff 0%, #f4f6fb 60%, #eef1f8 100%);
-    background-attachment: fixed;
-    color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    min-height:100vh; line-height:1.55;
-    overscroll-behavior-y: contain;
-    -webkit-font-smoothing: antialiased;
-  }
-  code,pre,.mono{font-family:'JetBrains Mono','Fira Code',Consolas,monospace}
-  a{color:var(--accent2)}
-  button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; font-family: inherit; }
-
-  #topbar{
-    position:sticky; top:0; z-index:50;
-    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-    padding: 12px 22px;
-    padding-top: calc(12px + var(--safe-top));
-    padding-left: calc(22px + var(--safe-left));
-    padding-right: calc(22px + var(--safe-right));
-    background:rgba(255,255,255,.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-    border-bottom:1px solid var(--border);
-    box-shadow:0 1px 3px rgba(0,0,0,0.04);
-  }
-  .logo{font-weight:800; font-size:1.15rem; letter-spacing:-.5px; white-space:nowrap; color:#1e293b}
-  .logo span{color:var(--accent)}
-  .stat{display:flex; align-items:center; gap:6px; font-size:.9rem; font-weight:600; color:#334155}
-  .stat .val{color:var(--gold)}
-  .xpwrap{flex:1; max-width:280px; margin-left:auto; min-width:140px}
-  .xpmeta{display:flex; justify-content:space-between; font-size:.72rem; color:var(--muted); margin-bottom:4px}
-  .xpbar{height:8px; background:var(--card2); border-radius:99px; overflow:hidden}
-  .xpfill{height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:99px; transition:width .5s ease}
-  .btn-icon{background:#fff; border:1px solid var(--border); color:var(--text);
-    padding:8px 12px; border-radius:10px; cursor:pointer; font-size:1rem; transition:.15s;
-    min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center}
-  .btn-icon:hover{border-color:var(--accent); color:var(--accent)}
-  .btn-icon:active{background:var(--accent); color:#fff}
-  .btn-icon.off{opacity:.4}
-  .btn-reset{background:transparent; border:1px solid var(--border); color:var(--muted);
-    padding:8px 12px; border-radius:10px; cursor:pointer; font-size:.8rem;
-    min-height:44px; display:inline-flex; align-items:center}
-  .btn-reset:hover{border-color:var(--red); color:var(--red)}
-  .btn-reset:active{background:#fee2e2}
-
-  #app{
-    max-width:1080px; margin:0 auto;
-    padding:34px 22px;
-    padding-left: calc(22px + var(--safe-left));
-    padding-right: calc(22px + var(--safe-right));
-    padding-bottom: calc(80px + var(--safe-bottom));
-  }
-  .hero{text-align:center; margin-bottom:40px}
-  .hero h1{font-size:2.4rem; letter-spacing:-1.5px; margin-bottom:10px; color:#0f172a}
-  .hero h1 em{font-style:normal; background:linear-gradient(90deg,var(--accent),var(--accent2));
-    -webkit-background-clip:text; background-clip:text; color:transparent}
-  .hero p{color:var(--muted); max-width:560px; margin:0 auto}
-
-  .world{
-    background:#ffffff; border:1px solid var(--border); border-radius:18px;
-    padding:22px; margin-bottom:22px; transition:.2s;
-    box-shadow:0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
-  }
-  .world.clickable{cursor:pointer}
-  .world.clickable:hover{transform:translateY(-2px); border-color:var(--accent);
-    box-shadow:0 4px 12px rgba(124,92,255,0.12), 0 8px 24px rgba(0,0,0,0.06)}
-  .world.clickable:active{transform:translateY(0)}
-  .world.locked{opacity:.55}
-  .world-head{display:flex; align-items:center; gap:14px; margin-bottom:6px; flex-wrap:wrap}
-  .world-emoji{font-size:1.9rem}
-  .world-title{font-size:1.25rem; font-weight:700; color:#0f172a}
-  .world-desc{color:var(--muted); font-size:.85rem}
-  .world-prog{margin-left:auto; text-align:right; font-size:.8rem; color:var(--muted)}
-  .world-prog b{color:var(--accent2); font-size:1.05rem}
-
-  .lessons{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; margin-top:18px}
-  .lesson{
-    background:var(--card2); border:1px solid var(--border); border-radius:12px;
-    padding:16px; cursor:pointer; transition:.18s; position:relative;
-    min-height:68px; display:flex; flex-direction:column; justify-content:center;
-  }
-  .lesson:hover:not(.locked){transform:translateY(-3px); border-color:var(--accent);
-    background:#fff; box-shadow:0 8px 24px rgba(124,92,255,.15)}
-  .lesson:active:not(.locked){transform:scale(0.98)}
-  .lesson.locked{opacity:.45; cursor:not-allowed}
-  .lesson.done{border-color:rgba(22,163,74,.4); background:#f0fdf4}
-  .lesson-name{font-weight:600; font-size:.92rem; margin-bottom:6px; color:#0f172a}
-  .lesson-stars{font-size:.85rem; letter-spacing:2px; color:var(--gold)}
-  .lesson-idx{position:absolute; top:12px; right:14px; font-size:.7rem; color:var(--muted)}
-
-  .badges-sec{margin-top:40px}
-  .badges-sec h2{font-size:1.1rem; margin-bottom:14px; color:#0f172a}
-  .badges{display:flex; flex-wrap:wrap; gap:10px}
-  .badge{background:#fff; border:1px solid var(--border); border-radius:10px;
-    padding:10px 14px; font-size:.82rem; display:flex; gap:8px; align-items:center; color:#334155}
-  .badge.off{opacity:.35; filter:grayscale(1)}
-  .badge.on{border-color:var(--gold); background:#fffbeb;
-    box-shadow:0 0 16px rgba(245,158,11,.15); color:#92400e}
-
-  .back{background:#fff; border:1px solid var(--border); color:var(--text);
-    padding:10px 18px; border-radius:10px; cursor:pointer; font-size:.9rem;
-    margin-bottom:22px; transition:.15s; min-height:44px;
-    display:inline-flex; align-items:center; gap:6px}
-  .back:hover{border-color:var(--accent); color:var(--accent)}
-  .back:active{background:var(--accent); color:#fff; border-color:var(--accent)}
-
-  .theory{
-    background:#ffffff; border:1px solid var(--border); border-radius:16px;
-    padding:22px 24px; margin-bottom:22px; position:relative;
-    box-shadow:0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
-  }
-  .theory h2{font-size:1.3rem; margin-bottom:14px; color:#0f172a; padding-right:44px}
-  .theory p{margin-bottom:10px; color:#334155; font-size:.93rem}
-  .theory ul{margin:0 0 12px 20px; color:#334155; font-size:.93rem}
-  .theory li{margin-bottom:6px}
-  .theory strong{color:#0f172a}
-  .theory code{
-    background:#eef2ff; padding:2px 7px; border-radius:5px;
-    color:#4338ca; font-size:.85em; font-weight:500;
-    word-break: break-word;
-  }
-  .theory pre{
-    background:var(--code); border:1px solid var(--border); border-radius:10px;
-    padding:14px 16px; overflow-x:auto; margin-bottom:12px; font-size:.85rem;
-    color:var(--code-text); line-height:1.6;
-    -webkit-overflow-scrolling: touch;
-  }
-  .theory pre code{background:transparent; padding:0; color:inherit; font-weight:normal}
-
-  .speak-fab{
-    position:absolute; top:16px; right:16px;
-    background:#fff; border:1px solid var(--border);
-    color:var(--accent); width:44px; height:44px; border-radius:50%;
-    cursor:pointer; font-size:1.1rem;
-    display:flex; align-items:center; justify-content:center;
-    transition:.15s;
-    box-shadow:0 1px 3px rgba(0,0,0,0.06);
-    z-index: 2;
-  }
-  .speak-fab:hover{background:var(--accent); color:#fff; border-color:var(--accent); transform:scale(1.1)}
-  .speak-fab:active{transform:scale(0.95)}
-  .speak-fab.speaking{background:var(--accent); color:#fff; border-color:var(--accent); animation:pulse 1s infinite}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,92,255,.6)}50%{box-shadow:0 0 0 8px rgba(124,92,255,0)}}
-
-  .ex-head{display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap}
-  .ex-head strong{color:#0f172a}
-  .ex-dots{display:flex; gap:7px; margin-left:auto}
-  .dot{width:11px; height:11px; border-radius:50%; background:#fff; border:1.5px solid var(--border-strong)}
-  .dot.cur{border-color:var(--accent); background:rgba(124,92,255,.15); box-shadow:0 0 10px var(--accent)}
-  .dot.ok{background:var(--green); border-color:var(--green)}
-
-  .prompt{font-size:1.02rem; margin-bottom:16px; font-weight:500; padding-right:56px; color:#0f172a}
-  .prompt b{color:#4338ca}
-  .prompt code{
-    background:#eef2ff; padding:2px 7px; border-radius:5px;
-    color:#4338ca; font-size:.88em; font-weight:500;
-    word-break: break-word;
-  }
-
-  .editor-wrap{position:relative; margin-bottom:14px}
-  textarea#editor{
-    width:100%; min-height:120px; resize:vertical;
-    background:#fafbfc; color:var(--code-text);
-    border:1px solid var(--border); border-radius:12px;
-    padding:16px 16px 16px 46px;
-    font-family:'JetBrains Mono',Consolas,monospace; font-size:16px; line-height:1.65;
-    outline:none; transition:.18s;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  textarea#editor:focus{border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px rgba(124,92,255,.15)}
-  .lineno{
-    position:absolute; left:0; top:0; bottom:0; width:38px;
-    background:#f1f5f9; border-right:1px solid var(--border);
-    border-radius:12px 0 0 12px; display:flex; flex-direction:column;
-    align-items:center; padding-top:16px; font-size:.72rem; color:#94a3b8;
-    font-family:'JetBrains Mono',monospace; gap:1px;
-    pointer-events: none;
-  }
-
-  .actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px}
-  .btn{
-    border:none; border-radius:10px; padding:12px 20px; font-size:.9rem;
-    font-weight:600; cursor:pointer; transition:.15s; font-family:inherit;
-    min-height:48px;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    display:inline-flex; align-items:center; justify-content:center; gap:6px;
-  }
-  .btn:disabled{opacity:.4; cursor:not-allowed}
-  .btn:active:not(:disabled){transform:scale(0.97)}
-  .btn-run{background:#fff; color:var(--text); border:1px solid var(--border)}
-  .btn-run:hover:not(:disabled){border-color:var(--accent2); color:var(--accent2); background:#f0f9ff}
-  .btn-check{background:linear-gradient(135deg,var(--accent),#5b3fd6); color:#fff;
-    box-shadow:0 2px 8px rgba(124,92,255,.25)}
-  .btn-check:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 8px 20px rgba(124,92,255,.4)}
-  .btn-hint{background:transparent; color:#b45309; border:1px solid rgba(245,158,11,.4)}
-  .btn-hint:hover:not(:disabled){background:#fffbeb; border-color:var(--gold)}
-  .btn-next{background:var(--green); color:#fff; box-shadow:0 2px 8px rgba(22,163,74,.25)}
-  .btn-next:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 8px 20px rgba(22,163,74,.35)}
-
-  .feedback{border-radius:12px; padding:14px 18px; margin-bottom:16px; font-size:.9rem; display:none}
-  .feedback.show{display:block; animation: slideIn .25s ease}
-  @keyframes slideIn{from{opacity:0; transform:translateY(-6px)}to{opacity:1; transform:translateY(0)}}
-  .feedback.ok{background:#dcfce7; border:1px solid #86efac; color:#166534}
-  .feedback.err{background:#fee2e2; border:1px solid #fca5a5; color:#991b1b}
-  .feedback.info{background:#ede9fe; border:1px solid #c4b5fd; color:#5b21b6}
-  .feedback b{font-weight:700}
-
-  .hintbox{border-radius:12px; padding:14px 18px; margin-bottom:16px; font-size:.88rem;
-    background:#fef3c7; border:1px solid #fcd34d; color:#92400e; display:none}
-  .hintbox.show{display:block; animation: slideIn .25s ease}
-
-  .results{border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; display:none; background:#fff}
-  .results.show{display:block}
-  .results-bar{background:var(--card2); padding:8px 14px; font-size:.75rem; color:var(--muted);
-    display:flex; justify-content:space-between; border-bottom:1px solid var(--border)}
-  .table-scroll{
-    overflow-x:auto; max-height:340px; overflow-y:auto;
-    -webkit-overflow-scrolling: touch;
-    position: relative;
-  }
-  .table-scroll::-webkit-scrollbar{height:8px}
-  .table-scroll::-webkit-scrollbar-thumb{background:#cbd5e1; border-radius:4px}
-  table{width:100%; border-collapse:collapse; font-size:.82rem}
-  th{background:#f1f5f9; text-align:left; padding:9px 14px; color:#4338ca; font-weight:600;
-    position:sticky; top:0; border-bottom:1px solid var(--border);
-    font-family:'JetBrains Mono',monospace; font-size:.78rem; white-space:nowrap}
-  td{padding:8px 14px; border-bottom:1px solid #f1f5f9;
-    font-family:'JetBrains Mono',monospace; color:#334155; white-space:nowrap}
-  tr:last-child td{border-bottom:none}
-  tr:hover td{background:#f8fafc}
-  td.null{color:#94a3b8; font-style:italic}
-
-  .complete{text-align:center; padding:50px 20px}
-  .complete .big{font-size:4rem; margin-bottom:16px; animation:pop .5s}
-  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
-  .complete h2{font-size:1.6rem; margin-bottom:10px; color:#0f172a}
-  .complete .stars{font-size:2rem; color:var(--gold); letter-spacing:6px; margin:14px 0}
-  .complete p{color:var(--muted); margin-bottom:24px}
-
-  #loader{position:fixed; inset:0; background:#ffffff; z-index:999; display:flex;
-    flex-direction:column; align-items:center; justify-content:center; gap:20px}
-  .spinner{width:44px; height:44px; border:3px solid var(--card2); border-top-color:var(--accent);
-    border-radius:50%; animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  #loader p{color:var(--muted); font-size:.9rem}
-
-  .modal-bg{position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:100; display:flex;
-    align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px);
-    -webkit-backdrop-filter:blur(4px);
-    padding-top: calc(20px + var(--safe-top));
-    padding-bottom: calc(20px + var(--safe-bottom));
-  }
-  .modal{background:#ffffff; border:1px solid var(--border); border-radius:16px; max-width:640px;
-    width:100%; max-height:80vh; overflow-y:auto; padding:26px;
-    box-shadow:0 20px 60px rgba(0,0,0,0.25);
-    -webkit-overflow-scrolling: touch;
-  }
-  .modal h3{margin-bottom:16px; color:#0f172a}
-  .modal pre{background:var(--code); border:1px solid var(--border); padding:14px;
-    border-radius:10px; font-size:.8rem; overflow-x:auto; color:var(--code-text); margin-bottom:12px}
-  .modal .btn{margin-top:10px; width: 100%}
-
-  #toast{position:fixed; bottom: calc(26px + var(--safe-bottom)); left:50%;
-    transform:translateX(-50%) translateY(100px);
-    background:#1e293b; border:1px solid var(--gold); color:#fbbf24; padding:12px 24px;
-    border-radius:12px; font-size:.88rem; font-weight:600; transition:.35s; z-index:200;
-    opacity:0; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,0.2);
-    max-width: 90vw; text-align: center}
-  #toast.show{transform:translateX(-50%) translateY(0); opacity:1}
-
-  .opt-btn{background:#fff; border:1px solid var(--border); color:var(--text);
-    padding:16px 18px; border-radius:12px; text-align:left; cursor:pointer; font-size:.95rem;
-    font-family:inherit; transition:.15s; width:100%; margin-bottom:10px; display:block;
-    min-height: 56px;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    line-height: 1.4;
-  }
-  .opt-btn:hover:not(:disabled){border-color:var(--accent); background:#f5f3ff}
-  .opt-btn:active:not(:disabled){transform:scale(0.98); background:#f5f3ff}
-  .opt-btn:disabled{cursor:not-allowed}
-  .opt-btn.correct{background:#dcfce7; border-color:var(--green); color:#166534}
-  .opt-btn.wrong{background:#fee2e2; border-color:var(--red); color:#991b1b}
-
-  .quiz-sql{background:var(--code); border:1px solid var(--border); border-radius:12px;
-    padding:16px; font-family:'JetBrains Mono',monospace; font-size:.85rem; color:var(--code-text);
-    margin-bottom:18px; white-space:pre-wrap; overflow-x:auto; line-height:1.6;
-    word-break: break-word;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .timer{display:flex; align-items:center; gap:8px; font-size:1.05rem; font-weight:700; color:#b45309}
-  .timer.warn{color:var(--red); animation:pulse 0.5s infinite}
-  .score-big{font-size:3rem; font-weight:800; color:var(--accent); margin:14px 0}
-
-  /* Pulse pour le bouton de test audio */
-  @keyframes ttsPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(124, 92, 255, 0.4); }
-    50%      { box-shadow: 0 0 0 6px rgba(124, 92, 255, 0); }
-  }
-  #test-audio-btn:not(.off){ animation: ttsPulse 2.5s infinite; }
-
-  @media (max-width: 768px){
-    #topbar{
-      padding: 10px 14px;
-      padding-top: calc(10px + var(--safe-top));
-      padding-left: calc(14px + var(--safe-left));
-      padding-right: calc(14px + var(--safe-right));
-      gap: 8px;
-    }
-    .logo{font-size:1rem}
-    .stat{font-size:.82rem}
-    .stat .val{font-size:.85rem}
-    .btn-reset{padding:6px 10px; font-size:.72rem; min-height:40px}
-    .btn-icon{padding:6px 10px; min-height:40px; min-width:40px; font-size:.95rem}
-    .xpwrap{order: 10; width: 100%; max-width: 100%; margin-left: 0; margin-top: 2px;}
-    .xpmeta{font-size:.7rem}
-    .xpbar{height:6px}
-
-    #app{
-      padding: 20px 14px;
-      padding-left: calc(14px + var(--safe-left));
-      padding-right: calc(14px + var(--safe-right));
-      padding-bottom: calc(100px + var(--safe-bottom));
-    }
-    .hero{margin-bottom:26px}
-    .hero h1{font-size:1.75rem; letter-spacing:-1px}
-    .hero p{font-size:.88rem}
-    .world{padding:16px; margin-bottom:16px; border-radius:14px}
-    .world-emoji{font-size:1.6rem}
-    .world-title{font-size:1.1rem}
-    .world-desc{font-size:.78rem}
-    .world-prog{font-size:.75rem}
-    .world-prog b{font-size:.95rem}
-
-    .lessons{grid-template-columns:1fr; gap:10px}
-    .lesson{padding:14px 16px; min-height:64px}
-
-    .theory{padding:16px 18px; margin-bottom:16px; border-radius:14px}
-    .theory h2{font-size:1.15rem; padding-right:44px}
-    .theory p, .theory ul{font-size:.88rem}
-    .theory pre{font-size:.78rem; padding:12px 14px}
-
-    textarea#editor{
-      font-size: 16px;
-      min-height: 140px;
-      padding: 14px 14px 14px 42px;
-    }
-    .lineno{ width: 34px; font-size: .7rem; padding-top: 14px; }
-
-    .actions{
-      position: sticky;
-      bottom: 0;
-      background: rgba(255,255,255,.95);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      padding: 10px 0;
-      margin: 0 0 16px;
-      border-top: 1px solid var(--border);
-      z-index: 10;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .actions .btn{
-      flex: 1 1 calc(50% - 4px);
-      padding: 12px 14px;
-      font-size: .85rem;
-      min-width: 0;
-    }
-    .actions .btn:only-child,
-    .actions .btn-next{ flex: 1 1 100%; }
-
-    .prompt{font-size:.95rem; padding-right:56px}
-    .feedback{padding:12px 14px; font-size:.85rem}
-    .hintbox{padding:12px 14px; font-size:.85rem}
-    .back{padding:10px 16px; font-size:.85rem; min-height:44px}
-    .speak-fab{width:40px; height:40px; font-size:1rem; top:14px; right:14px}
-
-    .opt-btn{ padding: 16px 16px; font-size: .92rem; min-height: 60px; }
-    .quiz-sql{font-size:.78rem; padding:14px}
-    .ex-head{font-size:.88rem}
-    .score-big{font-size:2.4rem}
-    .complete{padding:32px 16px}
-    .complete .big{font-size:3rem}
-    .complete h2{font-size:1.35rem}
-
-    .modal{padding:20px; border-radius:14px}
-    .modal h3{font-size:1.05rem}
-
-    #toast{font-size:.82rem; padding:10px 18px; max-width: calc(100vw - 32px)}
-  }
-
-  @media (max-width: 380px){
-    .hero h1{font-size:1.5rem}
-    .stat{font-size:.75rem}
-    .logo{font-size:.92rem}
-    .actions .btn{flex: 1 1 100%; padding: 12px}
-    .btn{padding:12px 16px; font-size:.85rem}
-  }
-
-  @media (hover: none){
-    .world.clickable:hover,
-    .lesson:hover:not(.locked),
-    .btn:hover:not(:disabled),
-    .opt-btn:hover:not(:disabled),
-    .btn-check:hover:not(:disabled),
-    .btn-next:hover:not(:disabled){
-      transform: none;
-      box-shadow: inherit;
-    }
-    .btn-check:active:not(:disabled),
-    .btn-next:active:not(:disabled){ transform: scale(0.97); }
-  }
-
-  @media (max-height: 500px) and (orientation: landscape){
-    #topbar{padding: 6px 14px}
-    .hero h1{font-size:1.4rem}
-    .hero p{display:none}
-  }
+:root{
+  --bg:#fff;--bg2:#f4f6fb;--card:#fff;--card2:#f1f5f9;
+  --border:#e2e8f0;--border-strong:#cbd5e1;
+  --text:#1e293b;--muted:#64748b;
+  --accent:#7c5cff;--accent2:#0ea5e9;--gold:#f59e0b;
+  --green:#16a34a;--red:#dc2626;--code:#f8fafc;--code-text:#1e293b;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);
+  --safe-right:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{
+  background:linear-gradient(180deg,#fff 0%,#f4f6fb 60%,#eef1f8 100%);
+  background-attachment:fixed;color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  min-height:100vh;line-height:1.55;overscroll-behavior-y:contain;
+  -webkit-font-smoothing:antialiased;
+}
+code,pre,.mono{font-family:'JetBrains Mono','Fira Code',Consolas,monospace}
+a{color:var(--accent2)}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;font-family:inherit}
+#topbar{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 22px;padding-top:calc(12px + var(--safe-top));
+  padding-left:calc(22px + var(--safe-left));padding-right:calc(22px + var(--safe-right));
+  background:rgba(255,255,255,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.logo{font-weight:800;font-size:1.15rem;letter-spacing:-.5px;white-space:nowrap;color:#1e293b}
+.logo span{color:var(--accent)}
+.stat{display:flex;align-items:center;gap:6px;font-size:.9rem;font-weight:600;color:#334155}
+.stat .val{color:var(--gold)}
+.xpwrap{flex:1;max-width:280px;margin-left:auto;min-width:140px}
+.xpmeta{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:4px}
+.xpbar{height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.xpfill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .5s}
+.btn-icon{background:#fff;border:1px solid var(--border);color:var(--text);
+  padding:8px 12px;border-radius:10px;cursor:pointer;font-size:1rem;transition:.15s;
+  min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+.btn-icon:active{background:var(--accent);color:#fff}
+.btn-icon.off{opacity:.4}
+.btn-reset{background:transparent;border:1px solid var(--border);color:var(--muted);
+  padding:8px 12px;border-radius:10px;cursor:pointer;font-size:.8rem;min-height:44px}
+.btn-reset:hover{border-color:var(--red);color:var(--red)}
+#app{max-width:1080px;margin:0 auto;padding:34px 22px;
+  padding-left:calc(22px + var(--safe-left));padding-right:calc(22px + var(--safe-right));
+  padding-bottom:calc(80px + var(--safe-bottom))}
+.hero{text-align:center;margin-bottom:40px}
+.hero h1{font-size:2.4rem;letter-spacing:-1.5px;margin-bottom:10px;color:#0f172a}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);max-width:560px;margin:0 auto}
+.world{background:#fff;border:1px solid var(--border);border-radius:18px;
+  padding:22px;margin-bottom:22px;transition:.2s;
+  box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03)}
+.world.clickable{cursor:pointer}
+.world.clickable:hover{transform:translateY(-2px);border-color:var(--accent);
+  box-shadow:0 4px 12px rgba(124,92,255,.12),0 8px 24px rgba(0,0,0,.06)}
+.world.locked{opacity:.55}
+.world-head{display:flex;align-items:center;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.world-emoji{font-size:1.9rem}
+.world-title{font-size:1.25rem;font-weight:700;color:#0f172a}
+.world-desc{color:var(--muted);font-size:.85rem}
+.world-prog{margin-left:auto;text-align:right;font-size:.8rem;color:var(--muted)}
+.world-prog b{color:var(--accent2);font-size:1.05rem}
+.lessons{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:18px}
+.lesson{background:var(--card2);border:1px solid var(--border);border-radius:12px;
+  padding:16px;cursor:pointer;transition:.18s;position:relative;min-height:68px;
+  display:flex;flex-direction:column;justify-content:center}
+.lesson:hover:not(.locked){transform:translateY(-3px);border-color:var(--accent);
+  background:#fff;box-shadow:0 8px 24px rgba(124,92,255,.15)}
+.lesson.locked{opacity:.45;cursor:not-allowed}
+.lesson.done{border-color:rgba(22,163,74,.4);background:#f0fdf4}
+.lesson-name{font-weight:600;font-size:.92rem;margin-bottom:6px;color:#0f172a}
+.lesson-stars{font-size:.85rem;letter-spacing:2px;color:var(--gold)}
+.lesson-idx{position:absolute;top:12px;right:14px;font-size:.7rem;color:var(--muted)}
+.badges-sec{margin-top:40px}
+.badges-sec h2{font-size:1.1rem;margin-bottom:14px;color:#0f172a}
+.badges{display:flex;flex-wrap:wrap;gap:10px}
+.badge{background:#fff;border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;font-size:.82rem;display:flex;gap:8px;align-items:center;color:#334155}
+.badge.off{opacity:.35;filter:grayscale(1)}
+.badge.on{border-color:var(--gold);background:#fffbeb;
+  box-shadow:0 0 16px rgba(245,158,11,.15);color:#92400e}
+.back{background:#fff;border:1px solid var(--border);color:var(--text);
+  padding:10px 18px;border-radius:10px;cursor:pointer;font-size:.9rem;
+  margin-bottom:22px;transition:.15s;min-height:44px;
+  display:inline-flex;align-items:center;gap:6px}
+.back:hover{border-color:var(--accent);color:var(--accent)}
+.theory{background:#fff;border:1px solid var(--border);border-radius:16px;
+  padding:22px 24px;margin-bottom:22px;position:relative;
+  box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03)}
+.theory h2,.theory h3{font-size:1.3rem;margin-bottom:14px;color:#0f172a;padding-right:44px}
+.theory h3{font-size:1.1rem}
+.theory p{margin-bottom:10px;color:#334155;font-size:.93rem}
+.theory ul,.theory ol{margin:0 0 12px 20px;color:#334155;font-size:.93rem}
+.theory li{margin-bottom:6px}
+.theory strong{color:#0f172a}
+.theory code{background:#eef2ff;padding:2px 7px;border-radius:5px;
+  color:#4338ca;font-size:.85em;font-weight:500;word-break:break-word}
+.theory pre{background:var(--code);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;overflow-x:auto;margin-bottom:12px;font-size:.85rem;
+  color:var(--code-text);line-height:1.6;-webkit-overflow-scrolling:touch}
+.speak-fab{position:absolute;top:16px;right:16px;background:#fff;border:1px solid var(--border);
+  color:var(--accent);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;transition:.15s;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);z-index:2}
+.speak-fab:hover{background:var(--accent);color:#fff}
+.speak-fab.speaking{background:var(--accent);color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,92,255,.6)}50%{box-shadow:0 0 0 8px rgba(124,92,255,0)}}
+.ex-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.ex-head strong{color:#0f172a}
+.ex-dots{display:flex;gap:7px;margin-left:auto}
+.dot{width:11px;height:11px;border-radius:50%;background:#fff;border:1.5px solid var(--border-strong)}
+.dot.cur{border-color:var(--accent);background:rgba(124,92,255,.15);box-shadow:0 0 10px var(--accent)}
+.dot.ok{background:var(--green);border-color:var(--green)}
+.prompt{font-size:1.02rem;margin-bottom:16px;font-weight:500;padding-right:56px;color:#0f172a}
+.prompt b{color:#4338ca}
+.prompt code{background:#eef2ff;padding:2px 7px;border-radius:5px;color:#4338ca;
+  font-size:.88em;font-weight:500;word-break:break-word}
+.editor-wrap{position:relative;margin-bottom:14px}
+textarea#editor{width:100%;min-height:120px;resize:vertical;background:#fafbfc;
+  color:var(--code-text);border:1px solid var(--border);border-radius:12px;
+  padding:16px 16px 16px 46px;font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:16px;line-height:1.65;outline:none;transition:.18s;
+  -webkit-appearance:none;appearance:none}
+textarea#editor:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(124,92,255,.15)}
+.lineno{position:absolute;left:0;top:0;bottom:0;width:38px;background:#f1f5f9;
+  border-right:1px solid var(--border);border-radius:12px 0 0 12px;
+  display:flex;flex-direction:column;align-items:center;padding-top:16px;
+  font-size:.72rem;color:#94a3b8;font-family:'JetBrains Mono',monospace;gap:1px;pointer-events:none}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.btn{border:none;border-radius:10px;padding:12px 20px;font-size:.9rem;font-weight:600;
+  cursor:pointer;transition:.15s;font-family:inherit;min-height:48px;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn-run{background:#fff;color:var(--text);border:1px solid var(--border)}
+.btn-run:hover:not(:disabled){border-color:var(--accent2);color:var(--accent2);background:#f0f9ff}
+.btn-check{background:linear-gradient(135deg,var(--accent),#5b3fd6);color:#fff;
+  box-shadow:0 2px 8px rgba(124,92,255,.25)}
+.btn-hint{background:transparent;color:#b45309;border:1px solid rgba(245,158,11,.4)}
+.btn-hint:hover:not(:disabled){background:#fffbeb}
+.btn-next{background:var(--green);color:#fff}
+.feedback{border-radius:12px;padding:14px 18px;margin-bottom:16px;font-size:.9rem;display:none}
+.feedback.show{display:block}
+.feedback.ok{background:#dcfce7;border:1px solid #86efac;color:#166534}
+.feedback.err{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b}
+.feedback.info{background:#ede9fe;border:1px solid #c4b5fd;color:#5b21b6}
+.hintbox{border-radius:12px;padding:14px 18px;margin-bottom:16px;font-size:.88rem;
+  background:#fef3c7;border:1px solid #fcd34d;color:#92400e;display:none}
+.hintbox.show{display:block}
+.results{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;
+  display:none;background:#fff}
+.results.show{display:block}
+.results-bar{background:var(--card2);padding:8px 14px;font-size:.75rem;color:var(--muted);
+  display:flex;justify-content:space-between;border-bottom:1px solid var(--border)}
+.table-scroll{overflow-x:auto;max-height:340px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:#f1f5f9;text-align:left;padding:9px 14px;color:#4338ca;font-weight:600;
+  position:sticky;top:0;border-bottom:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;font-size:.78rem;white-space:nowrap}
+td{padding:8px 14px;border-bottom:1px solid #f1f5f9;
+  font-family:'JetBrains Mono',monospace;color:#334155;white-space:nowrap}
+td.null{color:#94a3b8;font-style:italic}
+.complete{text-align:center;padding:50px 20px}
+.complete .big{font-size:4rem;margin-bottom:16px;animation:pop .5s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.complete h2{font-size:1.6rem;margin-bottom:10px;color:#0f172a}
+.complete .stars{font-size:2rem;color:var(--gold);letter-spacing:6px;margin:14px 0}
+.complete p{color:var(--muted);margin-bottom:24px}
+#loader{position:fixed;inset:0;background:#fff;z-index:999;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.spinner{width:44px;height:44px;border:3px solid var(--card2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader p{color:var(--muted);font-size:.9rem}
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);padding-top:calc(20px + var(--safe-top));
+  padding-bottom:calc(20px + var(--safe-bottom))}
+.modal{background:#fff;border:1px solid var(--border);border-radius:16px;max-width:640px;
+  width:100%;max-height:80vh;overflow-y:auto;padding:26px;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);-webkit-overflow-scrolling:touch}
+.modal h3{margin-bottom:16px;color:#0f172a}
+.modal pre{background:var(--code);border:1px solid var(--border);padding:14px;
+  border-radius:10px;font-size:.8rem;overflow-x:auto;color:var(--code-text);margin-bottom:12px}
+.modal .btn{margin-top:10px;width:100%}
+#toast{position:fixed;bottom:calc(26px + var(--safe-bottom));left:50%;
+  transform:translateX(-50%) translateY(100px);background:#1e293b;border:1px solid var(--gold);
+  color:#fbbf24;padding:12px 24px;border-radius:12px;font-size:.88rem;font-weight:600;
+  transition:.35s;z-index:200;opacity:0;pointer-events:none;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.opt-btn{background:#fff;border:1px solid var(--border);color:var(--text);
+  padding:16px 18px;border-radius:12px;text-align:left;cursor:pointer;font-size:.95rem;
+  font-family:inherit;transition:.15s;width:100%;margin-bottom:10px;display:block;
+  min-height:56px;line-height:1.4}
+.opt-btn:hover:not(:disabled){border-color:var(--accent);background:#f5f3ff}
+.opt-btn:disabled{cursor:not-allowed}
+.opt-btn.correct{background:#dcfce7;border-color:var(--green);color:#166534}
+.opt-btn.wrong{background:#fee2e2;border-color:var(--red);color:#991b1b}
+.quiz-sql{background:var(--code);border:1px solid var(--border);border-radius:12px;
+  padding:16px;font-family:'JetBrains Mono',monospace;font-size:.85rem;
+  color:var(--code-text);margin-bottom:18px;white-space:pre-wrap;
+  overflow-x:auto;line-height:1.6;word-break:break-word}
+.timer{display:flex;align-items:center;gap:8px;font-size:1.05rem;font-weight:700;color:#b45309}
+.timer.warn{color:var(--red);animation:pulse .5s infinite}
+.score-big{font-size:3rem;font-weight:800;color:var(--accent);margin:14px 0}
+@keyframes ttsPulse{0%,100%{box-shadow:0 0 0 0 rgba(124,92,255,.4)}50%{box-shadow:0 0 0 6px rgba(124,92,255,0)}}
+#test-audio-btn:not(.off){animation:ttsPulse 2.5s infinite}
+/* Academy styles */
+.chapter-card{background:#fff;border:1px solid var(--border);border-radius:14px;
+  padding:18px 20px;margin-bottom:14px;cursor:pointer;transition:.2s;
+  box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.chapter-card:hover{border-color:var(--accent);transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(124,92,255,.12)}
+.chapter-head{display:flex;align-items:center;gap:14px}
+.chapter-num{width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),#5b3fd6);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;flex-shrink:0}
+.chapter-info{flex:1;min-width:0}
+.chapter-title{font-weight:700;font-size:1rem;color:#0f172a;margin-bottom:2px}
+.chapter-summary{font-size:.82rem;color:var(--muted)}
+.chapter-progress{font-size:.78rem;color:var(--accent2);font-weight:600;white-space:nowrap}
+.tp-item{background:#f8fafc;border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;margin-bottom:12px;transition:.15s}
+.tp-item.done{background:#f0fdf4;border-color:rgba(22,163,74,.3)}
+.tp-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.tp-check{width:24px;height:24px;border:2px solid var(--border-strong);border-radius:6px;
+  cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:#fff;transition:.15s;font-size:.85rem;color:transparent;margin-top:2px}
+.tp-check:hover{border-color:var(--accent)}
+.tp-check.done{background:var(--green);border-color:var(--green);color:#fff}
+.tp-prompt{flex:1;font-size:.93rem;color:#0f172a;font-weight:500}
+.tp-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tp-actions .btn{padding:8px 14px;font-size:.8rem;min-height:40px}
+.tp-solution{background:var(--code);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:.82rem;
+  color:var(--code-text);white-space:pre-wrap;margin-top:10px;display:none;
+  line-height:1.6;word-break:break-word}
+.tp-solution.show{display:block}
+.tp-hintbox{background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;
+  padding:10px 14px;font-size:.83rem;color:#92400e;margin-top:10px;display:none}
+.tp-hintbox.show{display:block}
+@media(max-width:768px){
+  #topbar{padding:10px 14px;padding-top:calc(10px + var(--safe-top));
+    padding-left:calc(14px + var(--safe-left));padding-right:calc(14px + var(--safe-right));gap:8px}
+  .logo{font-size:1rem}
+  .stat{font-size:.82rem}
+  .btn-icon,.btn-reset{min-height:40px;padding:6px 10px}
+  .xpwrap{order:10;width:100%;max-width:100%;margin-left:0;margin-top:2px}
+  #app{padding:20px 14px;padding-left:calc(14px + var(--safe-left));
+    padding-right:calc(14px + var(--safe-right));
+    padding-bottom:calc(100px + var(--safe-bottom))}
+  .hero h1{font-size:1.75rem}
+  .world{padding:16px;border-radius:14px}
+  .world-title{font-size:1.1rem}
+  .lessons{grid-template-columns:1fr}
+  .theory{padding:16px 18px}
+  textarea#editor{font-size:16px;min-height:140px}
+  .actions{position:sticky;bottom:0;background:rgba(255,255,255,.95);
+    backdrop-filter:blur(10px);padding:10px 0;margin:0 0 16px;
+    border-top:1px solid var(--border);z-index:10;gap:8px}
+  .actions .btn{flex:1 1 calc(50% - 4px);padding:12px 14px;font-size:.85rem}
+  .actions .btn:only-child,.actions .btn-next{flex:1 1 100%}
+  .speak-fab{width:40px;height:40px;font-size:1rem;top:14px;right:14px}
+  .opt-btn{padding:16px;font-size:.92rem;min-height:60px}
+  .chapter-card{padding:14px 16px}
+  .chapter-num{width:38px;height:38px;font-size:1rem}
+  .chapter-title{font-size:.95rem}
+  .tp-item{padding:14px}
+  .tp-actions .btn{flex:1 1 calc(50% - 4px);font-size:.78rem;padding:10px 12px}
+  .modal{padding:20px}
+  #toast{font-size:.82rem;padding:10px 18px;max-width:calc(100vw - 32px)}
+}
 </style>
 </head>
 <body>
@@ -463,7 +305,7 @@
     <div class="xpbar"><div class="xpfill" id="xp-fill"></div></div>
   </div>
   <button class="btn-icon" id="test-audio-btn" onclick="testAudio()" title="Tester le son">🔔</button>
-  <button class="btn-icon" id="tts-btn" onclick="toggleTTS()" title="Activer / désactiver la voix">🔊</button>
+  <button class="btn-icon" id="tts-btn" onclick="toggleTTS()" title="Voix">🔊</button>
   <button class="btn-reset" onclick="resetProgress()">Reset</button>
 </header>
 
@@ -472,7 +314,7 @@
 
 <script>
 /* =========================================================
-   1. DATASETS
+   DATASETS
    ========================================================= */
 const DB_SQL = `
 CREATE TABLE products (
@@ -488,7 +330,6 @@ INSERT INTO products VALUES
 (11,'Tablette 10 pouces','Informatique',449.00,18),(12,'Support écran','Accessoire',49.90,45),
 (13,'SSD 1To','Informatique',109.99,55),(14,'Hub USB','Accessoire',24.99,200),
 (15,'Casque gamer','Audio',149.99,30);
-
 CREATE TABLE customers (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT NOT NULL, country TEXT NOT NULL
 );
@@ -500,7 +341,6 @@ INSERT INTO customers VALUES
 (9,'Ines Garcia','Madrid','Espagne'),(10,'Jules Petit','Marseille','France'),
 (11,'Kim Lee','Séoul','Corée'),(12,'Luca Bianchi','Milan','Italie'),
 (13,'Nora Haddad','Tunis','Tunisie');
-
 CREATE TABLE orders (
   id INTEGER PRIMARY KEY, customer_id INTEGER NOT NULL, product_id INTEGER NOT NULL,
   quantity INTEGER NOT NULL, order_date TEXT NOT NULL
@@ -519,340 +359,467 @@ INSERT INTO orders VALUES
 `;
 
 /* =========================================================
-   2. CURRICULUM
+   CURRICULUM (mode jeu — 3 mondes)
    ========================================================= */
 const CURRICULUM = [
 {id:'w1',title:"L'Éveil",emoji:'🌅',desc:"SELECT & WHERE — les fondations",
  lessons:[
   {id:'w1l1',title:'La commande SELECT',
    theory:`<h2>SELECT — lire les données</h2>
-     <p><code>SELECT</code> est la commande de base : elle sert à <strong>lire</strong> des données depuis une table.</p>
+     <p><code>SELECT</code> est la commande de base : elle sert à <strong>lire</strong> des données.</p>
      <pre>SELECT colonnes FROM table;</pre>
-     <ul><li><code>*</code> = toutes les colonnes</li>
-     <li>On peut lister les colonnes : <code>SELECT name, price FROM products</code></li>
-     <li><code>AS</code> donne un alias : <code>SELECT name AS produit</code></li>
-     <li><code>DISTINCT</code> supprime les doublons</li></ul>
-     <p>💡 Tables : <code>products</code>, <code>customers</code>, <code>orders</code>.</p>`,
+     <ul><li><code>*</code> = toutes les colonnes</li><li><code>AS</code> = alias</li><li><code>DISTINCT</code> = sans doublons</li></ul>`,
    exercises:[
-    {prompt:"Affiche <b>toutes les colonnes</b> de la table <code>products</code>.",
-     starter:"SELECT ", solution:"SELECT * FROM products",
-     hint:"Utilise l'astérisque * pour dire « toutes les colonnes »."},
-    {prompt:"Affiche uniquement le <b>nom</b> et le <b>prix</b> des produits.",
-     starter:"SELECT ", solution:"SELECT name, price FROM products",
-     hint:"Sépare les colonnes par une virgule."},
-    {prompt:"Affiche le nom des produits avec l'alias <b>produit</b>.",
-     starter:"SELECT ", solution:"SELECT name AS produit FROM products",
-     hint:"Syntaxe : colonne AS alias."},
-    {prompt:"Affiche les <b>catégories distinctes</b> présentes dans products.",
-     starter:"SELECT ", solution:"SELECT DISTINCT category FROM products",
-     hint:"DISTINCT s'écrit juste après SELECT."}]},
+    {prompt:"Affiche <b>toutes les colonnes</b> de la table <code>products</code>.", starter:"SELECT ", solution:"SELECT * FROM products", hint:"Utilise l'astérisque *."},
+    {prompt:"Affiche uniquement le <b>nom</b> et le <b>prix</b> des produits.", starter:"SELECT ", solution:"SELECT name, price FROM products", hint:"Sépare les colonnes par une virgule."},
+    {prompt:"Affiche le nom des produits avec l'alias <b>produit</b>.", starter:"SELECT ", solution:"SELECT name AS produit FROM products", hint:"Syntaxe : colonne AS alias."},
+    {prompt:"Affiche les <b>catégories distinctes</b>.", starter:"SELECT ", solution:"SELECT DISTINCT category FROM products", hint:"DISTINCT après SELECT."}]},
   {id:'w1l2',title:'Filtrer avec WHERE',
-   theory:`<h2>WHERE — filtrer les lignes</h2>
-     <p><code>WHERE</code> garde uniquement les lignes qui respectent une condition.</p>
+   theory:`<h2>WHERE — filtrer</h2>
      <pre>SELECT * FROM products WHERE price &gt; 100;</pre>
-     <ul><li>Comparaisons : <code>=</code> <code>&lt;&gt;</code> <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code></li>
-     <li>Combiner : <code>AND</code>, <code>OR</code>, <code>NOT</code></li>
-     <li>Intervalle : <code>BETWEEN a AND b</code></li>
-     <li>Liste : <code>IN ('a','b')</code></li></ul>
-     <p>⚠️ Les textes s'écrivent entre apostrophes.</p>`,
+     <ul><li><code>=</code> <code>&lt;&gt;</code> <code>&gt;</code> <code>&lt;</code></li><li><code>AND</code> <code>OR</code> <code>NOT</code></li><li><code>BETWEEN</code> <code>IN</code></li></ul>`,
    exercises:[
-    {prompt:"Affiche le nom et le prix des produits dont le prix est <b>supérieur à 100</b>.",
-     starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE price > 100",
-     hint:"WHERE price > 100"},
-    {prompt:"Affiche tous les produits de la catégorie <b>'Audio'</b>.",
-     starter:"SELECT * FROM products WHERE ", solution:"SELECT * FROM products WHERE category = 'Audio'",
-     hint:"Les chaînes se mettent entre apostrophes simples."},
-    {prompt:"Affiche le nom et le stock des produits dont le stock est <b>entre 20 et 60 inclus</b>.",
-     starter:"SELECT name, stock FROM products WHERE ", solution:"SELECT name, stock FROM products WHERE stock BETWEEN 20 AND 60",
-     hint:"BETWEEN 20 AND 60"},
-    {prompt:"Affiche le nom et la catégorie des produits de catégorie <b>'Audio' ou 'Accessoire'</b>.",
-     starter:"SELECT name, category FROM products WHERE ", solution:"SELECT name, category FROM products WHERE category IN ('Audio','Accessoire')",
-     hint:"IN ('Audio','Accessoire')"}]},
-  {id:'w1l3',title:'LIKE & opérateurs logiques',
-   theory:`<h2>Rechercher du texte avec LIKE</h2>
-     <p><code>LIKE</code> cherche un motif dans du texte.</p>
-     <ul><li><code>%</code> = n'importe quelle suite de caractères</li>
-     <li><code>_</code> = exactement un caractère</li></ul>
-     <pre>'A%' → commence par A
-'%a' → finit par a
-'%usb%' → contient usb</pre>
-     <p>On combine avec <code>AND</code> / <code>OR</code> / <code>NOT IN</code>.</p>`,
+    {prompt:"Nom et prix des produits dont le prix est <b>supérieur à 100</b>.", starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE price > 100", hint:"WHERE price > 100"},
+    {prompt:"Tous les produits de catégorie <b>'Audio'</b>.", starter:"SELECT * FROM products WHERE ", solution:"SELECT * FROM products WHERE category = 'Audio'", hint:"Les chaînes entre apostrophes."},
+    {prompt:"Nom et stock des produits dont le stock est <b>entre 20 et 60 inclus</b>.", starter:"SELECT name, stock FROM products WHERE ", solution:"SELECT name, stock FROM products WHERE stock BETWEEN 20 AND 60", hint:"BETWEEN 20 AND 60"},
+    {prompt:"Nom et catégorie des produits <b>'Audio' ou 'Accessoire'</b>.", starter:"SELECT name, category FROM products WHERE ", solution:"SELECT name, category FROM products WHERE category IN ('Audio','Accessoire')", hint:"IN (...)"}]},
+  {id:'w1l3',title:'LIKE & opérateurs',
+   theory:`<h2>Rechercher du texte</h2>
+     <p><code>LIKE</code> cherche un motif.</p>
+     <ul><li><code>%</code> = n'importe quelle suite</li><li><code>_</code> = exactement un caractère</li></ul>
+     <pre>'A%' commence par A — '%usb%' contient usb</pre>`,
    exercises:[
-    {prompt:"Affiche le nom des produits qui <b>contiennent 'USB'</b>.",
-     starter:"SELECT name FROM products WHERE ", solution:"SELECT name FROM products WHERE name LIKE '%USB%'",
-     hint:"LIKE '%USB%'"},
-    {prompt:"Affiche le nom des produits qui <b>commencent par 'C'</b>.",
-     starter:"SELECT name FROM products WHERE ", solution:"SELECT name FROM products WHERE name LIKE 'C%'",
-     hint:"LIKE 'C%'"},
-    {prompt:"Affiche nom, prix et stock des produits dont le prix est <b>supérieur à 1000</b> <u>ou</u> le stock <b>inférieur à 20</b>.",
-     starter:"SELECT name, price, stock FROM products WHERE ", solution:"SELECT name, price, stock FROM products WHERE price > 1000 OR stock < 20",
-     hint:"Utilise OR entre les deux conditions."},
-    {prompt:"Affiche nom et catégorie des produits qui <b>ne sont ni 'Audio' ni 'Accessoire'</b>.",
-     starter:"SELECT name, category FROM products WHERE ", solution:"SELECT name, category FROM products WHERE category NOT IN ('Audio','Accessoire')",
-     hint:"NOT IN ('Audio','Accessoire')"}]},
+    {prompt:"Produits qui <b>contiennent 'USB'</b>.", starter:"SELECT name FROM products WHERE ", solution:"SELECT name FROM products WHERE name LIKE '%USB%'", hint:"LIKE '%USB%'"},
+    {prompt:"Produits qui <b>commencent par 'C'</b>.", starter:"SELECT name FROM products WHERE ", solution:"SELECT name FROM products WHERE name LIKE 'C%'", hint:"LIKE 'C%'"},
+    {prompt:"Nom, prix et stock des produits dont le prix est <b>&gt; 1000</b> <u>ou</u> le stock <b>&lt; 20</b>.", starter:"SELECT name, price, stock FROM products WHERE ", solution:"SELECT name, price, stock FROM products WHERE price > 1000 OR stock < 20", hint:"Utilise OR."},
+    {prompt:"Nom et catégorie des produits qui <b>ne sont ni 'Audio' ni 'Accessoire'</b>.", starter:"SELECT name, category FROM products WHERE ", solution:"SELECT name, category FROM products WHERE category NOT IN ('Audio','Accessoire')", hint:"NOT IN (...)"}]},
   {id:'w1l4',title:"⚔️ Boss — L'Épreuve du Seuil",
-   theory:`<h2>⚔️ Boss du Monde 1</h2>
-     <p>Tu as appris <code>SELECT</code>, <code>WHERE</code>, <code>LIKE</code>, <code>IN</code>, <code>BETWEEN</code>.</p>
-     <p>Ce boss mélange tout. Prends ton temps.</p>`,
+   theory:`<h2>⚔️ Boss du Monde 1</h2><p>Mélange de SELECT, WHERE, LIKE, IN, BETWEEN.</p>`,
    exercises:[
-    {prompt:"Affiche le nom des clients qui habitent en <b>France</b>.",
-     starter:"SELECT name FROM customers WHERE ", solution:"SELECT name FROM customers WHERE country = 'France'",
-     hint:"Table customers, colonne country."},
-    {prompt:"Affiche le nom et le prix des produits de catégorie <b>'Informatique'</b> coûtant <b>plus de 300</b>.",
-     starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE category = 'Informatique' AND price > 300",
-     hint:"Deux conditions reliées par AND."},
-    {prompt:"Affiche les produits dont le nom <b>contient 'Casque'</b>.",
-     starter:"SELECT * FROM products WHERE ", solution:"SELECT * FROM products WHERE name LIKE '%Casque%'",
-     hint:"LIKE '%Casque%'"},
-    {prompt:"Affiche nom et ville des clients dont la ville <b>n'est pas</b> 'Paris' et qui viennent d'un pays <b>différent de 'France'</b>.",
-     starter:"SELECT name, city FROM customers WHERE ", solution:"SELECT name, city FROM customers WHERE city <> 'Paris' AND country <> 'France'",
-     hint:"L'opérateur « différent de » s'écrit <>."}]}
+    {prompt:"Nom des clients qui habitent en <b>France</b>.", starter:"SELECT name FROM customers WHERE ", solution:"SELECT name FROM customers WHERE country = 'France'", hint:"country = 'France'"},
+    {prompt:"Nom et prix des produits 'Informatique' coûtant <b>plus de 300</b>.", starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE category = 'Informatique' AND price > 300", hint:"AND entre conditions."},
+    {prompt:"Produits dont le nom <b>contient 'Casque'</b>.", starter:"SELECT * FROM products WHERE ", solution:"SELECT * FROM products WHERE name LIKE '%Casque%'", hint:"LIKE '%Casque%'"},
+    {prompt:"Clients hors de <b>Paris</b> et hors <b>France</b>.", starter:"SELECT name, city FROM customers WHERE ", solution:"SELECT name, city FROM customers WHERE city <> 'Paris' AND country <> 'France'", hint:"<> = différent."}]}
  ]},
 {id:'w2',title:"L'Ordre",emoji:'📊',desc:"Trier, compter, regrouper",
  lessons:[
   {id:'w2l1',title:'ORDER BY & LIMIT',
-   theory:`<h2>Trier et limiter</h2>
-     <pre>SELECT * FROM products ORDER BY price DESC;</pre>
-     <ul><li><code>ASC</code> = croissant (défaut), <code>DESC</code> = décroissant</li>
-     <li>Plusieurs tris : <code>ORDER BY cat ASC, price DESC</code></li>
-     <li><code>LIMIT n</code> ne garde que les n premières lignes</li></ul>
-     <p>⚠️ Sans <code>ORDER BY</code>, l'ordre n'est pas garanti.</p>`,
+   theory:`<h2>Trier et limiter</h2><pre>SELECT * FROM products ORDER BY price DESC;</pre>
+     <ul><li><code>ASC</code> croissant / <code>DESC</code> décroissant</li><li><code>LIMIT n</code></li></ul>`,
    exercises:[
-    {prompt:"Affiche nom et prix des produits <b>triés par prix croissant</b>.",
-     starter:"SELECT name, price FROM products ORDER BY ", solution:"SELECT name, price FROM products ORDER BY price ASC",
-     hint:"ORDER BY price ASC", ordered:true},
-    {prompt:"Affiche les <b>3 produits les plus chers</b> (nom et prix).",
-     starter:"SELECT name, price FROM products ORDER BY ", solution:"SELECT name, price FROM products ORDER BY price DESC LIMIT 3",
-     hint:"DESC + LIMIT 3", ordered:true},
-    {prompt:"Affiche nom et ville des clients <b>triés par ville</b> (A→Z).",
-     starter:"SELECT name, city FROM customers ORDER BY ", solution:"SELECT name, city FROM customers ORDER BY city ASC",
-     hint:"ORDER BY city", ordered:true},
-    {prompt:"Affiche les <b>5 produits 'Informatique' les moins chers</b> (nom et prix).",
-     starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE category = 'Informatique' ORDER BY price ASC LIMIT 5",
-     hint:"WHERE puis ORDER BY puis LIMIT.", ordered:true}]},
-  {id:'w2l2',title:"Fonctions d'agrégation",
-   theory:`<h2>Agréger des données</h2>
-     <p>Les agrégats calculent <strong>une seule valeur</strong> à partir de plusieurs lignes.</p>
-     <ul><li><code>COUNT(*)</code> — nombre de lignes</li>
-     <li><code>COUNT(col)</code> — nombre de valeurs non NULL</li>
-     <li><code>SUM(col)</code> — somme</li>
-     <li><code>AVG(col)</code> — moyenne</li>
-     <li><code>MIN(col)</code> / <code>MAX(col)</code> — min / max</li></ul>
-     <pre>SELECT COUNT(*) FROM products;
-SELECT AVG(price) FROM products;</pre>`,
+    {prompt:"Nom et prix des produits <b>triés par prix croissant</b>.", starter:"SELECT name, price FROM products ORDER BY ", solution:"SELECT name, price FROM products ORDER BY price ASC", hint:"ORDER BY price ASC", ordered:true},
+    {prompt:"Les <b>3 produits les plus chers</b>.", starter:"SELECT name, price FROM products ORDER BY ", solution:"SELECT name, price FROM products ORDER BY price DESC LIMIT 3", hint:"DESC + LIMIT 3", ordered:true},
+    {prompt:"Clients <b>triés par ville</b>.", starter:"SELECT name, city FROM customers ORDER BY ", solution:"SELECT name, city FROM customers ORDER BY city ASC", hint:"ORDER BY city", ordered:true},
+    {prompt:"Les <b>5 produits 'Informatique' les moins chers</b>.", starter:"SELECT name, price FROM products WHERE ", solution:"SELECT name, price FROM products WHERE category = 'Informatique' ORDER BY price ASC LIMIT 5", hint:"WHERE + ORDER BY + LIMIT", ordered:true}]},
+  {id:'w2l2',title:"Agrégats",
+   theory:`<h2>Agréger</h2><ul><li><code>COUNT(*)</code> / <code>COUNT(col)</code></li><li><code>SUM</code> <code>AVG</code> <code>MIN</code> <code>MAX</code></li></ul>`,
    exercises:[
-    {prompt:"Affiche le <b>nombre total de produits</b>.",
-     starter:"SELECT ", solution:"SELECT COUNT(*) FROM products",
-     hint:"COUNT(*)"},
-    {prompt:"Affiche le <b>prix moyen</b> des produits.",
-     starter:"SELECT ", solution:"SELECT AVG(price) FROM products",
-     hint:"AVG(price)"},
-    {prompt:"Affiche le <b>prix minimum</b> et le <b>prix maximum</b> des produits (2 colonnes).",
-     starter:"SELECT ", solution:"SELECT MIN(price), MAX(price) FROM products",
-     hint:"MIN(price), MAX(price)"},
-    {prompt:"Affiche la <b>somme totale du stock</b> de tous les produits.",
-     starter:"SELECT ", solution:"SELECT SUM(stock) FROM products",
-     hint:"SUM(stock)"}]},
+    {prompt:"Le <b>nombre total de produits</b>.", starter:"SELECT ", solution:"SELECT COUNT(*) FROM products", hint:"COUNT(*)"},
+    {prompt:"Le <b>prix moyen</b>.", starter:"SELECT ", solution:"SELECT AVG(price) FROM products", hint:"AVG(price)"},
+    {prompt:"Le <b>prix min</b> et <b>max</b> (2 colonnes).", starter:"SELECT ", solution:"SELECT MIN(price), MAX(price) FROM products", hint:"MIN, MAX"},
+    {prompt:"La <b>somme totale du stock</b>.", starter:"SELECT ", solution:"SELECT SUM(stock) FROM products", hint:"SUM(stock)"}]},
   {id:'w2l3',title:'GROUP BY & HAVING',
-   theory:`<h2>Regrouper</h2>
-     <p><code>GROUP BY</code> regroupe les lignes qui partagent une valeur.</p>
-     <pre>SELECT category, COUNT(*) FROM products GROUP BY category;</pre>
-     <ul><li><code>WHERE</code> filtre les lignes <strong>avant</strong> le regroupement</li>
-     <li><code>HAVING</code> filtre les groupes <strong>après</strong> l'agrégation</li></ul>
-     <pre>SELECT category, SUM(stock) FROM products
-GROUP BY category HAVING SUM(stock) &gt; 200;</pre>`,
+   theory:`<h2>Regrouper</h2><pre>SELECT category, COUNT(*) FROM products GROUP BY category;</pre>
+     <p><code>WHERE</code> avant, <code>HAVING</code> après le regroupement.</p>`,
    exercises:[
-    {prompt:"Affiche le <b>nombre de produits par catégorie</b> (catégorie + compte).",
-     starter:"SELECT category, ", solution:"SELECT category, COUNT(*) FROM products GROUP BY category",
-     hint:"GROUP BY category"},
-    {prompt:"Affiche le <b>prix moyen par catégorie</b> (catégorie + moyenne).",
-     starter:"SELECT category, ", solution:"SELECT category, AVG(price) FROM products GROUP BY category",
-     hint:"AVG(price) + GROUP BY"},
-    {prompt:"Affiche les catégories dont le <b>stock total dépasse 200</b> (catégorie + total).",
-     starter:"SELECT category, SUM(stock) FROM products GROUP BY category HAVING ", solution:"SELECT category, SUM(stock) FROM products GROUP BY category HAVING SUM(stock) > 200",
-     hint:"HAVING SUM(stock) > 200"},
-    {prompt:"Affiche le <b>stock total par catégorie</b>, trié par total <b>décroissant</b>.",
-     starter:"SELECT category, SUM(stock) AS total FROM products GROUP BY category ORDER BY ", solution:"SELECT category, SUM(stock) AS total FROM products GROUP BY category ORDER BY total DESC",
-     hint:"ORDER BY total DESC", ordered:true}]},
+    {prompt:"<b>Nombre de produits par catégorie</b>.", starter:"SELECT category, ", solution:"SELECT category, COUNT(*) FROM products GROUP BY category", hint:"GROUP BY category"},
+    {prompt:"<b>Prix moyen par catégorie</b>.", starter:"SELECT category, ", solution:"SELECT category, AVG(price) FROM products GROUP BY category", hint:"AVG + GROUP BY"},
+    {prompt:"Catégories dont le <b>stock total &gt; 200</b>.", starter:"SELECT category, SUM(stock) FROM products GROUP BY category HAVING ", solution:"SELECT category, SUM(stock) FROM products GROUP BY category HAVING SUM(stock) > 200", hint:"HAVING SUM(stock) > 200"},
+    {prompt:"Stock total par catégorie, trié décroissant.", starter:"SELECT category, SUM(stock) AS total FROM products GROUP BY category ORDER BY ", solution:"SELECT category, SUM(stock) AS total FROM products GROUP BY category ORDER BY total DESC", hint:"ORDER BY total DESC", ordered:true}]},
   {id:'w2l4',title:"⚔️ Boss — Le Cercle des Nombres",
-   theory:`<h2>⚔️ Boss du Monde 2</h2>
-     <p>Tris, agrégats, regroupements… tout se mélange ici.</p>
-     <p>Rappel : <code>WHERE</code> avant <code>GROUP BY</code>, <code>HAVING</code> après.</p>`,
+   theory:`<h2>⚔️ Boss du Monde 2</h2><p>Tris, agrégats, regroupements mélangés.</p>`,
    exercises:[
-    {prompt:"Affiche nom et ville des clients <b>français</b>, triés par nom.",
-     starter:"SELECT name, city FROM customers WHERE ", solution:"SELECT name, city FROM customers WHERE country = 'France' ORDER BY name ASC",
-     hint:"WHERE … ORDER BY name", ordered:true},
-    {prompt:"Affiche le <b>nombre de clients par pays</b>.",
-     starter:"SELECT country, ", solution:"SELECT country, COUNT(*) FROM customers GROUP BY country",
-     hint:"GROUP BY country"},
-    {prompt:"Affiche le <b>prix moyen</b> des produits de catégorie 'Audio'.",
-     starter:"SELECT ", solution:"SELECT AVG(price) FROM products WHERE category = 'Audio'",
-     hint:"AVG + WHERE"},
-    {prompt:"Affiche les catégories dont le <b>prix moyen dépasse 100</b>, triées par prix moyen décroissant.",
-     starter:"SELECT category, AVG(price) AS moy FROM products GROUP BY category HAVING ", solution:"SELECT category, AVG(price) AS moy FROM products GROUP BY category HAVING AVG(price) > 100 ORDER BY moy DESC",
-     hint:"HAVING AVG(price) > 100 puis ORDER BY moy DESC", ordered:true}]}
+    {prompt:"Clients français triés par nom.", starter:"SELECT name, city FROM customers WHERE ", solution:"SELECT name, city FROM customers WHERE country = 'France' ORDER BY name ASC", hint:"WHERE + ORDER BY", ordered:true},
+    {prompt:"<b>Nombre de clients par pays</b>.", starter:"SELECT country, ", solution:"SELECT country, COUNT(*) FROM customers GROUP BY country", hint:"GROUP BY country"},
+    {prompt:"Prix moyen des produits 'Audio'.", starter:"SELECT ", solution:"SELECT AVG(price) FROM products WHERE category = 'Audio'", hint:"AVG + WHERE"},
+    {prompt:"Catégories dont le prix moyen &gt; 100, triées décroissant.", starter:"SELECT category, AVG(price) AS moy FROM products GROUP BY category HAVING ", solution:"SELECT category, AVG(price) AS moy FROM products GROUP BY category HAVING AVG(price) > 100 ORDER BY moy DESC", hint:"HAVING + ORDER BY moy DESC", ordered:true}]}
  ]},
 {id:'w3',title:"Les Liens",emoji:'🔗',desc:"JOIN — relier les tables",
  lessons:[
   {id:'w3l1',title:'INNER JOIN',
-   theory:`<h2>Relier deux tables</h2>
-     <p><code>JOIN</code> combine les lignes de deux tables selon une condition.</p>
-     <pre>SELECT c.name, o.order_date
+   theory:`<h2>JOIN</h2><pre>SELECT c.name, o.order_date
 FROM orders o
 JOIN customers c ON o.customer_id = c.id;</pre>
-     <ul><li>On donne un <strong>alias</strong> à chaque table : <code>orders o</code></li>
-     <li><code>ON</code> précise la condition de jointure</li>
-     <li><code>JOIN</code> seul = <code>INNER JOIN</code></li></ul>`,
+     <p>Alias obligatoires, <code>ON</code> précise la condition.</p>`,
    exercises:[
-    {prompt:"Affiche le <b>nom du client</b> et la <b>date de commande</b>.",
-     starter:"SELECT c.name, o.order_date FROM orders o JOIN ", solution:"SELECT c.name, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id",
-     hint:"JOIN customers c ON o.customer_id = c.id"},
-    {prompt:"Affiche le <b>nom du produit</b> commandé et la <b>quantité</b>.",
-     starter:"SELECT p.name, o.quantity FROM orders o JOIN ", solution:"SELECT p.name, o.quantity FROM orders o JOIN products p ON o.product_id = p.id",
-     hint:"JOIN products p ON o.product_id = p.id"},
-    {prompt:"Affiche les <b>commandes d'Alice Martin</b> (id + date).",
-     starter:"SELECT o.id, o.order_date FROM orders o JOIN customers c ON ", solution:"SELECT o.id, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.name = 'Alice Martin'",
-     hint:"Ajoute un WHERE sur c.name."},
-    {prompt:"Pour chaque commande : <b>nom du client</b>, <b>nom du produit</b>, <b>quantité</b>.",
-     starter:"SELECT c.name, p.name, o.quantity FROM orders o ", solution:"SELECT c.name, p.name, o.quantity FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id",
-     hint:"Deux JOIN successifs : customers puis products."}]},
+    {prompt:"Nom du client + date de commande.", starter:"SELECT c.name, o.order_date FROM orders o JOIN ", solution:"SELECT c.name, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id", hint:"JOIN customers c ON o.customer_id = c.id"},
+    {prompt:"Nom du produit + quantité.", starter:"SELECT p.name, o.quantity FROM orders o JOIN ", solution:"SELECT p.name, o.quantity FROM orders o JOIN products p ON o.product_id = p.id", hint:"JOIN products p ON o.product_id = p.id"},
+    {prompt:"Commandes d'Alice Martin (id + date).", starter:"SELECT o.id, o.order_date FROM orders o JOIN customers c ON ", solution:"SELECT o.id, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.name = 'Alice Martin'", hint:"Ajoute WHERE c.name = ..."},
+    {prompt:"Nom client + nom produit + quantité.", starter:"SELECT c.name, p.name, o.quantity FROM orders o ", solution:"SELECT c.name, p.name, o.quantity FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id", hint:"Deux JOIN successifs."}]},
   {id:'w3l2',title:'LEFT JOIN',
-   theory:`<h2>LEFT JOIN — garder tout le monde</h2>
-     <p><code>LEFT JOIN</code> garde <strong>toutes les lignes de gauche</strong>, même sans correspondance (colonnes de droite à NULL).</p>
-     <pre>SELECT c.name, o.id FROM customers c
-LEFT JOIN orders o ON o.customer_id = c.id;</pre>
-     <p>💡 Pour trouver les <strong>absents</strong> :</p>
-     <pre>WHERE o.id IS NULL</pre>`,
+   theory:`<h2>LEFT JOIN</h2><p>Garde toutes les lignes de gauche, NULL pour les absences.</p><pre>WHERE o.id IS NULL</pre>`,
    exercises:[
-    {prompt:"Affiche chaque client avec son <b>nombre de commandes</b> (0 si aucune).",
-     starter:"SELECT c.name, COUNT(o.id) FROM customers c LEFT JOIN orders o ON ", solution:"SELECT c.name, COUNT(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name",
-     hint:"LEFT JOIN puis GROUP BY c.id, c.name"},
-    {prompt:"Affiche les <b>clients n'ayant jamais commandé</b>.",
-     starter:"SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE ", solution:"SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL",
-     hint:"WHERE o.id IS NULL"},
-    {prompt:"Affiche les <b>produits jamais commandés</b>.",
-     starter:"SELECT p.name FROM products p LEFT JOIN orders o ON o.product_id = p.id WHERE ", solution:"SELECT p.name FROM products p LEFT JOIN orders o ON o.product_id = p.id WHERE o.id IS NULL",
-     hint:"Même technique avec products."},
-    {prompt:"Affiche le <b>nom de chaque produit</b> et son <b>nombre de commandes</b> (0 inclus).",
-     starter:"SELECT p.name, COUNT(o.id) FROM products p LEFT JOIN orders o ON ", solution:"SELECT p.name, COUNT(o.id) FROM products p LEFT JOIN orders o ON o.product_id = p.id GROUP BY p.id, p.name",
-     hint:"GROUP BY p.id, p.name"}]},
+    {prompt:"Chaque client + son nombre de commandes (0 inclus).", starter:"SELECT c.name, COUNT(o.id) FROM customers c LEFT JOIN orders o ON ", solution:"SELECT c.name, COUNT(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name", hint:"LEFT JOIN + GROUP BY"},
+    {prompt:"Clients qui n'ont jamais commandé.", starter:"SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE ", solution:"SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL", hint:"WHERE o.id IS NULL"},
+    {prompt:"Produits jamais commandés.", starter:"SELECT p.name FROM products p LEFT JOIN orders o ON o.product_id = p.id WHERE ", solution:"SELECT p.name FROM products p LEFT JOIN orders o ON o.product_id = p.id WHERE o.id IS NULL", hint:"Même technique."},
+    {prompt:"Chaque produit + son nombre de commandes.", starter:"SELECT p.name, COUNT(o.id) FROM products p LEFT JOIN orders o ON ", solution:"SELECT p.name, COUNT(o.id) FROM products p LEFT JOIN orders o ON o.product_id = p.id GROUP BY p.id, p.name", hint:"GROUP BY p.id, p.name"}]},
   {id:'w3l3',title:'JOIN + agrégats',
-   theory:`<h2>Analyser avec les jointures</h2>
-     <p>On peut combiner <code>JOIN</code> et agrégats pour de vraies analyses.</p>
-     <pre>SELECT c.name, SUM(o.quantity * p.price) AS total
+   theory:`<h2>Analyses</h2><pre>SELECT c.name, SUM(o.quantity * p.price) AS total
 FROM orders o
 JOIN customers c ON o.customer_id = c.id
-JOIN products p  ON o.product_id  = p.id
-GROUP BY c.id, c.name
-ORDER BY total DESC;</pre>`,
+JOIN products p ON o.product_id = p.id
+GROUP BY c.id, c.name;</pre>`,
    exercises:[
-    {prompt:"Affiche le <b>chiffre d'affaires total</b> (somme de quantity × price).",
-     starter:"SELECT SUM(o.quantity * p.price) FROM orders o JOIN products p ON ", solution:"SELECT SUM(o.quantity * p.price) FROM orders o JOIN products p ON o.product_id = p.id",
-     hint:"SUM(o.quantity * p.price)"},
-    {prompt:"Affiche le <b>CA par catégorie</b>, trié par CA décroissant.",
-     starter:"SELECT p.category, SUM(o.quantity * p.price) AS ca FROM orders o JOIN products p ON o.product_id = p.id GROUP BY ", solution:"SELECT p.category, SUM(o.quantity * p.price) AS ca FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category ORDER BY ca DESC",
-     hint:"GROUP BY p.category puis ORDER BY ca DESC", ordered:true},
-    {prompt:"Affiche les <b>3 clients ayant passé le plus de commandes</b> (nom + nombre), départage alphabétique.",
-     starter:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.id, c.name ORDER BY nb DESC, c.name ASC LIMIT 3",
-     hint:"ORDER BY nb DESC, c.name ASC LIMIT 3", ordered:true},
-    {prompt:"Affiche les <b>3 produits les plus vendus en quantité</b> (nom + quantité totale), départage alphabétique.",
-     starter:"SELECT p.name, SUM(o.quantity) AS total FROM orders o JOIN products p ON ", solution:"SELECT p.name, SUM(o.quantity) AS total FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.id, p.name ORDER BY total DESC, p.name ASC LIMIT 3",
-     hint:"GROUP BY p.id, p.name puis ORDER BY total DESC", ordered:true}]},
-  {id:'w3l4',title:'⚔️ Boss — Le Grand Croisement',
-   theory:`<h2>⚔️ Boss final</h2>
-     <p>Jointures, agrégats, LEFT JOIN, HAVING, tris… tout est là.</p>
-     <p>Tu es au bout du parcours. Bonne chance.</p>`,
+    {prompt:"Chiffre d'affaires total.", starter:"SELECT SUM(o.quantity * p.price) FROM orders o JOIN products p ON ", solution:"SELECT SUM(o.quantity * p.price) FROM orders o JOIN products p ON o.product_id = p.id", hint:"SUM(quantity * price)"},
+    {prompt:"CA par catégorie, trié décroissant.", starter:"SELECT p.category, SUM(o.quantity * p.price) AS ca FROM orders o JOIN products p ON o.product_id = p.id GROUP BY ", solution:"SELECT p.category, SUM(o.quantity * p.price) AS ca FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category ORDER BY ca DESC", hint:"GROUP BY + ORDER BY ca DESC", ordered:true},
+    {prompt:"Top 3 clients par nombre de commandes.", starter:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.id, c.name ORDER BY nb DESC, c.name ASC LIMIT 3", hint:"ORDER BY nb DESC", ordered:true},
+    {prompt:"Top 3 produits les plus vendus (qté).", starter:"SELECT p.name, SUM(o.quantity) AS total FROM orders o JOIN products p ON ", solution:"SELECT p.name, SUM(o.quantity) AS total FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.id, p.name ORDER BY total DESC, p.name ASC LIMIT 3", hint:"SUM + LIMIT 3", ordered:true}]},
+  {id:'w3l4',title:"⚔️ Boss — Le Grand Croisement",
+   theory:`<h2>⚔️ Boss final du jeu</h2><p>Tout est là.</p>`,
    exercises:[
-    {prompt:"Affiche chaque client et son <b>nombre de commandes</b>, trié par nombre décroissant puis nom.",
-     starter:"SELECT c.name, COUNT(o.id) AS nb FROM customers c LEFT JOIN orders o ON ", solution:"SELECT c.name, COUNT(o.id) AS nb FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name ORDER BY nb DESC, c.name ASC",
-     hint:"LEFT JOIN + GROUP BY + ORDER BY nb DESC, c.name", ordered:true},
-    {prompt:"Affiche le <b>nombre de commandes par pays</b>, trié décroissant puis pays.",
-     starter:"SELECT c.country, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.country, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.country ORDER BY nb DESC, c.country ASC",
-     hint:"GROUP BY c.country, ORDER BY nb DESC", ordered:true},
-    {prompt:"Affiche les clients ayant passé <b>au moins 3 commandes</b>, trié par nombre décroissant puis nom.",
-     starter:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.id, c.name HAVING COUNT(*) >= 3 ORDER BY nb DESC, c.name ASC",
-     hint:"HAVING COUNT(*) >= 3", ordered:true},
-    {prompt:"Affiche le <b>CA total par pays</b>, trié par CA décroissant.",
-     starter:"SELECT c.country, SUM(o.quantity * p.price) AS ca FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON ", solution:"SELECT c.country, SUM(o.quantity * p.price) AS ca FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id GROUP BY c.country ORDER BY ca DESC",
-     hint:"Double JOIN + GROUP BY + ORDER BY", ordered:true}]}
+    {prompt:"Chaque client + son nombre de commandes, trié nb desc puis nom.", starter:"SELECT c.name, COUNT(o.id) AS nb FROM customers c LEFT JOIN orders o ON ", solution:"SELECT c.name, COUNT(o.id) AS nb FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name ORDER BY nb DESC, c.name ASC", hint:"LEFT JOIN + GROUP BY", ordered:true},
+    {prompt:"Nombre de commandes par pays, trié desc puis pays.", starter:"SELECT c.country, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.country, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.country ORDER BY nb DESC, c.country ASC", hint:"GROUP BY c.country", ordered:true},
+    {prompt:"Clients avec ≥ 3 commandes, trié desc puis nom.", starter:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON ", solution:"SELECT c.name, COUNT(*) AS nb FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.id, c.name HAVING COUNT(*) >= 3 ORDER BY nb DESC, c.name ASC", hint:"HAVING COUNT(*) >= 3", ordered:true},
+    {prompt:"CA total par pays, trié décroissant.", starter:"SELECT c.country, SUM(o.quantity * p.price) AS ca FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON ", solution:"SELECT c.country, SUM(o.quantity * p.price) AS ca FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id GROUP BY c.country ORDER BY ca DESC", hint:"Double JOIN + GROUP BY", ordered:true}]}
  ]}
 ];
 
 /* =========================================================
-   3. ARCADE DATA
+   ACADEMY — 12 chapitres avec TP
+   ========================================================= */
+const ACADEMY = [
+{id:'ch1',emoji:'1️⃣',title:'SELECT — Lire les données',
+ summary:'La commande de base pour lire une table.',
+ theory:`<h3>SELECT</h3>
+ <p><code>SELECT</code> lit les données d'une table. C'est la commande la plus utilisée en SQL.</p>
+ <pre>SELECT colonnes FROM table;</pre>
+ <ul>
+   <li><code>SELECT *</code> — toutes les colonnes</li>
+   <li><code>SELECT name, price</code> — colonnes spécifiques</li>
+   <li><code>SELECT name AS produit</code> — alias</li>
+   <li><code>SELECT DISTINCT category</code> — sans doublons</li>
+   <li><code>SELECT price * 1.2 AS ttc</code> — calculs</li>
+   <li><code>SELECT 'texte' AS col</code> — valeur littérale</li>
+ </ul>
+ <pre>SELECT * FROM products;
+SELECT name, price FROM products;
+SELECT name AS produit FROM products;
+SELECT DISTINCT category FROM products;</pre>`,
+ tps:[
+  {prompt:'Affiche uniquement les noms de tous les produits.', hint:'SELECT name FROM products', solution:'SELECT name FROM products'},
+  {prompt:'Affiche le nom et la catégorie des produits.', hint:'SELECT name, category FROM products', solution:'SELECT name, category FROM products'},
+  {prompt:'Affiche tous les clients.', hint:'SELECT * FROM customers', solution:'SELECT * FROM customers'},
+  {prompt:'Affiche le nom des clients renommé en <code>client</code> et leur ville en <code>ville</code>.', hint:'SELECT name AS client, city AS ville FROM customers', solution:'SELECT name AS client, city AS ville FROM customers'},
+  {prompt:'Affiche les villes distinctes des clients.', hint:'DISTINCT après SELECT', solution:'SELECT DISTINCT city FROM customers'},
+  {prompt:'Affiche le nom, le prix, et le prix avec 10% de remise (<code>prix_remise</code>).', hint:'price * 0.9', solution:'SELECT name, price, price * 0.9 AS prix_remise FROM products'},
+  {prompt:'Affiche les noms de produits avec la mention <code>disponible</code> dans une colonne <code>statut</code>.', hint:"Valeur littérale 'disponible'", solution:"SELECT name, 'disponible' AS statut FROM products"},
+  {prompt:'Affiche le nom et le double du stock (<code>stock_x2</code>).', hint:'stock * 2', solution:'SELECT name, stock * 2 AS stock_x2 FROM products'}
+ ]},
+{id:'ch2',emoji:'2️⃣',title:'WHERE — Filtrer',
+ summary:'Garder uniquement les lignes qui respectent une condition.',
+ theory:`<h3>WHERE</h3>
+ <p><code>WHERE</code> filtre les lignes.</p>
+ <pre>SELECT colonnes FROM table WHERE condition;</pre>
+ <ul>
+   <li><code>=</code> <code>&lt;&gt;</code> <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code></li>
+   <li><code>AND</code> / <code>OR</code> / <code>NOT</code></li>
+   <li><code>BETWEEN a AND b</code></li>
+   <li><code>IN (...)</code> / <code>NOT IN (...)</code></li>
+   <li><code>LIKE '%x%'</code> — motif</li>
+   <li><code>IS NULL</code> / <code>IS NOT NULL</code></li>
+ </ul>
+ <pre>SELECT * FROM products WHERE price &gt; 100;
+SELECT * FROM products WHERE category IN ('Audio','Accessoire');</pre>`,
+ tps:[
+  {prompt:'Produits dont le prix dépasse 200€.', hint:'WHERE price > 200', solution:'SELECT * FROM products WHERE price > 200'},
+  {prompt:'Produits de la catégorie <code>Audio</code>.', hint:"WHERE category = 'Audio'", solution:"SELECT * FROM products WHERE category = 'Audio'"},
+  {prompt:'Produits dont le stock est inférieur à 30.', hint:'WHERE stock < 30', solution:'SELECT * FROM products WHERE stock < 30'},
+  {prompt:'Clients habitant à <code>Paris</code>.', hint:"WHERE city = 'Paris'", solution:"SELECT * FROM customers WHERE city = 'Paris'"},
+  {prompt:'Produits dont le prix est entre 50 et 150 inclus.', hint:'BETWEEN 50 AND 150', solution:'SELECT * FROM products WHERE price BETWEEN 50 AND 150'},
+  {prompt:'Produits de catégorie <code>Informatique</code> OU <code>Audio</code>.', hint:'IN (...)', solution:"SELECT * FROM products WHERE category IN ('Informatique','Audio')"},
+  {prompt:'Clients hors de <code>France</code>.', hint:"<> 'France'", solution:"SELECT * FROM customers WHERE country <> 'France'"},
+  {prompt:'Produits dont le nom commence par <code>C</code>.', hint:"LIKE 'C%'", solution:"SELECT * FROM products WHERE name LIKE 'C%'"},
+  {prompt:'Produits dont le nom contient <code>USB</code>.', hint:"LIKE '%USB%'", solution:"SELECT * FROM products WHERE name LIKE '%USB%'"},
+  {prompt:'Produits <code>Informatique</code> à + de 300€ et stock &gt; 20.', hint:'AND entre conditions', solution:"SELECT * FROM products WHERE category = 'Informatique' AND price > 300 AND stock > 20"},
+  {prompt:'Clients des pays <code>France</code>, <code>Italie</code>, <code>Espagne</code>.', hint:'IN (...)', solution:"SELECT * FROM customers WHERE country IN ('France','Italie','Espagne')"},
+  {prompt:'Produits dont le nom finit par <code>audio</code>.', hint:"LIKE '%audio'", solution:"SELECT * FROM products WHERE name LIKE '%audio'"}
+ ]},
+{id:'ch3',emoji:'3️⃣',title:'ORDER BY & LIMIT',
+ summary:'Trier et limiter le nombre de résultats.',
+ theory:`<h3>ORDER BY et LIMIT</h3>
+ <pre>SELECT ... ORDER BY colonne ASC|DESC LIMIT n;</pre>
+ <ul>
+   <li><code>ASC</code> croissant (défaut) / <code>DESC</code> décroissant</li>
+   <li>Tri multiple : <code>ORDER BY cat ASC, price DESC</code></li>
+   <li><code>LIMIT n</code> — n premières lignes</li>
+   <li><code>LIMIT n OFFSET m</code> — pagination</li>
+ </ul>
+ <p>⚠️ Sans <code>ORDER BY</code>, l'ordre n'est PAS garanti.</p>`,
+ tps:[
+  {prompt:'Produits triés par prix croissant.', hint:'ORDER BY price ASC', solution:'SELECT * FROM products ORDER BY price ASC'},
+  {prompt:'Produits triés par prix décroissant.', hint:'DESC', solution:'SELECT * FROM products ORDER BY price DESC'},
+  {prompt:'Les 5 produits les plus chers.', hint:'DESC + LIMIT 5', solution:'SELECT * FROM products ORDER BY price DESC LIMIT 5'},
+  {prompt:'Les 3 produits les moins chers.', hint:'ASC + LIMIT 3', solution:'SELECT * FROM products ORDER BY price ASC LIMIT 3'},
+  {prompt:'Clients triés par nom A→Z.', hint:'ORDER BY name', solution:'SELECT * FROM customers ORDER BY name ASC'},
+  {prompt:'Clients triés par pays puis par ville.', hint:'ORDER BY country, city', solution:'SELECT * FROM customers ORDER BY country ASC, city ASC'},
+  {prompt:'Top 3 produits Informatique les plus chers.', hint:'WHERE + ORDER BY + LIMIT', solution:"SELECT * FROM products WHERE category = 'Informatique' ORDER BY price DESC LIMIT 3"},
+  {prompt:'Produits triés par stock décroissant, 5 premiers.', hint:'DESC + LIMIT', solution:'SELECT * FROM products ORDER BY stock DESC LIMIT 5'},
+  {prompt:'Clients par pays croissant puis nom décroissant.', hint:'ORDER BY country ASC, name DESC', solution:'SELECT * FROM customers ORDER BY country ASC, name DESC'},
+  {prompt:'Produits > 100€, triés par prix croissant, limités à 3.', hint:'WHERE + ORDER BY + LIMIT', solution:'SELECT * FROM products WHERE price > 100 ORDER BY price ASC LIMIT 3'}
+ ]},
+{id:'ch4',emoji:'4️⃣',title:"Fonctions d'agrégation",
+ summary:'Compter, sommer, moyenner, min/max.',
+ theory:`<h3>Agrégats</h3>
+ <p>Calculent UNE valeur à partir de plusieurs lignes.</p>
+ <ul>
+   <li><code>COUNT(*)</code> — nombre de lignes</li>
+   <li><code>COUNT(DISTINCT col)</code> — valeurs distinctes</li>
+   <li><code>SUM(col)</code> <code>AVG(col)</code> <code>MIN(col)</code> <code>MAX(col)</code></li>
+ </ul>
+ <pre>SELECT COUNT(*) FROM products;
+SELECT AVG(price) FROM products;</pre>`,
+ tps:[
+  {prompt:'Nombre total de produits.', hint:'COUNT(*)', solution:'SELECT COUNT(*) FROM products'},
+  {prompt:'Nombre total de clients.', hint:'COUNT(*)', solution:'SELECT COUNT(*) FROM customers'},
+  {prompt:'Prix moyen des produits.', hint:'AVG(price)', solution:'SELECT AVG(price) FROM products'},
+  {prompt:'Prix minimum et maximum (2 colonnes).', hint:'MIN + MAX', solution:'SELECT MIN(price), MAX(price) FROM products'},
+  {prompt:'Somme totale du stock.', hint:'SUM(stock)', solution:'SELECT SUM(stock) FROM products'},
+  {prompt:'Nombre de commandes.', hint:'COUNT(*) FROM orders', solution:'SELECT COUNT(*) FROM orders'},
+  {prompt:'Nombre de pays distincts.', hint:'COUNT(DISTINCT country)', solution:'SELECT COUNT(DISTINCT country) FROM customers'},
+  {prompt:'Quantité totale commandée.', hint:'SUM(quantity)', solution:'SELECT SUM(quantity) FROM orders'},
+  {prompt:'Prix moyen des produits Audio.', hint:'AVG + WHERE', solution:"SELECT AVG(price) FROM products WHERE category = 'Audio'"},
+  {prompt:'Nombre de produits dont le prix > 100.', hint:'COUNT + WHERE', solution:'SELECT COUNT(*) FROM products WHERE price > 100'},
+  {prompt:'Quantité moyenne par commande.', hint:'AVG(quantity)', solution:'SELECT AVG(quantity) FROM orders'},
+  {prompt:'Stock total des produits Accessoire.', hint:'SUM + WHERE', solution:"SELECT SUM(stock) FROM products WHERE category = 'Accessoire'"}
+ ]},
+{id:'ch5',emoji:'5️⃣',title:'GROUP BY & HAVING',
+ summary:'Regrouper les lignes puis filtrer les groupes.',
+ theory:`<h3>GROUP BY</h3>
+ <p>Regroupe les lignes qui partagent une valeur, applique un agrégat par groupe.</p>
+ <pre>SELECT category, COUNT(*) FROM products GROUP BY category;</pre>
+ <p><strong>WHERE</strong> filtre les lignes AVANT. <strong>HAVING</strong> filtre les groupes APRÈS.</p>
+ <p>Ordre d'exécution : <code>FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</code></p>
+ <p>⚠️ Dans <code>SELECT</code>, uniquement colonnes du GROUP BY + agrégats.</p>
+ <pre>SELECT category, AVG(price) FROM products
+GROUP BY category HAVING AVG(price) &gt; 100;</pre>`,
+ tps:[
+  {prompt:'Nombre de produits par catégorie.', hint:'GROUP BY category', solution:'SELECT category, COUNT(*) FROM products GROUP BY category'},
+  {prompt:'Prix moyen par catégorie.', hint:'AVG + GROUP BY', solution:'SELECT category, AVG(price) FROM products GROUP BY category'},
+  {prompt:'Stock total par catégorie.', hint:'SUM + GROUP BY', solution:'SELECT category, SUM(stock) FROM products GROUP BY category'},
+  {prompt:'Nombre de clients par pays.', hint:'GROUP BY country', solution:'SELECT country, COUNT(*) FROM customers GROUP BY country'},
+  {prompt:'Nombre de commandes par client (customer_id).', hint:'GROUP BY customer_id', solution:'SELECT customer_id, COUNT(*) FROM orders GROUP BY customer_id'},
+  {prompt:'Catégories dont le prix moyen > 100.', hint:'HAVING AVG(price) > 100', solution:'SELECT category, AVG(price) FROM products GROUP BY category HAVING AVG(price) > 100'},
+  {prompt:'Catégories dont le stock total > 200.', hint:'HAVING SUM(stock) > 200', solution:'SELECT category, SUM(stock) FROM products GROUP BY category HAVING SUM(stock) > 200'},
+  {prompt:'Nombre de produits par catégorie, trié décroissant.', hint:'ORDER BY nb DESC', solution:'SELECT category, COUNT(*) AS nb FROM products GROUP BY category ORDER BY nb DESC'},
+  {prompt:'Prix moyen par catégorie pour produits > 50€.', hint:'WHERE avant GROUP BY', solution:'SELECT category, AVG(price) FROM products WHERE price > 50 GROUP BY category'},
+  {prompt:'Pays avec au moins 2 clients.', hint:'HAVING COUNT(*) >= 2', solution:'SELECT country, COUNT(*) FROM customers GROUP BY country HAVING COUNT(*) >= 2'},
+  {prompt:'Nombre de commandes par produit (product_id).', hint:'GROUP BY product_id', solution:'SELECT product_id, COUNT(*) FROM orders GROUP BY product_id'},
+  {prompt:'Catégories dont le prix max > 500.', hint:'HAVING MAX(price)', solution:'SELECT category, MAX(price) FROM products GROUP BY category HAVING MAX(price) > 500'},
+  {prompt:'Par catégorie : nombre, prix moyen, stock total (trié moy desc).', hint:'Plusieurs agrégats', solution:'SELECT category, COUNT(*) AS nb, AVG(price) AS moyenne, SUM(stock) AS stock_total FROM products GROUP BY category ORDER BY moyenne DESC'}
+ ]},
+{id:'ch6',emoji:'6️⃣',title:'JOIN — Relier les tables',
+ summary:'Combiner les lignes de plusieurs tables.',
+ theory:`<h3>JOIN</h3>
+ <table style="width:100%;font-size:.85rem;margin-bottom:12px;border-collapse:collapse">
+   <tr style="background:#f1f5f9"><th style="padding:8px;text-align:left;border:1px solid var(--border)">Type</th><th style="padding:8px;text-align:left;border:1px solid var(--border)">Résultat</th></tr>
+   <tr><td style="padding:8px;border:1px solid var(--border)"><code>INNER JOIN</code></td><td style="padding:8px;border:1px solid var(--border)">Les deux tables</td></tr>
+   <tr><td style="padding:8px;border:1px solid var(--border)"><code>LEFT JOIN</code></td><td style="padding:8px;border:1px solid var(--border)">Tout à gauche + NULL à droite</td></tr>
+ </table>
+ <pre>SELECT colonnes FROM t1 alias1 JOIN t2 alias2 ON alias1.col = alias2.col;</pre>
+ <p>Astuce : <code>LEFT JOIN ... WHERE t2.id IS NULL</code> = lignes absentes à droite.</p>`,
+ tps:[
+  {prompt:'Nom du client + date de commande.', hint:'JOIN customers ON customer_id', solution:'SELECT c.name, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id'},
+  {prompt:'Nom du produit + quantité.', hint:'JOIN products', solution:'SELECT p.name, o.quantity FROM orders o JOIN products p ON o.product_id = p.id'},
+  {prompt:'Nom client + nom produit + quantité.', hint:'Deux JOIN', solution:'SELECT c.name, p.name, o.quantity FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id'},
+  {prompt:'Commandes d\'Alice Martin (date + quantité).', hint:'WHERE c.name', solution:"SELECT o.order_date, o.quantity FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.name = 'Alice Martin'"},
+  {prompt:'Commandes de produits Audio (nom + quantité).', hint:'WHERE p.category', solution:"SELECT p.name, o.quantity FROM orders o JOIN products p ON o.product_id = p.id WHERE p.category = 'Audio'"},
+  {prompt:'Nom client + nom produit + date.', hint:'Deux JOIN', solution:'SELECT c.name, p.name, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id JOIN products p ON o.product_id = p.id'},
+  {prompt:'Clients ayant au moins une commande (sans doublon).', hint:'DISTINCT', solution:'SELECT DISTINCT c.name FROM customers c JOIN orders o ON o.customer_id = c.id'},
+  {prompt:'Clients n\'ayant jamais commandé.', hint:'LEFT JOIN + IS NULL', solution:'SELECT c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL'},
+  {prompt:'Produits jamais commandés.', hint:'LEFT JOIN', solution:'SELECT p.name FROM products p LEFT JOIN orders o ON o.product_id = p.id WHERE o.id IS NULL'},
+  {prompt:'Nombre de commandes par client (nom + nb).', hint:'GROUP BY', solution:'SELECT c.name, COUNT(o.id) AS nb FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name'},
+  {prompt:'Nombre de commandes par produit (nom + nb).', hint:'GROUP BY', solution:'SELECT p.name, COUNT(o.id) AS nb FROM products p LEFT JOIN orders o ON o.product_id = p.id GROUP BY p.id, p.name'},
+  {prompt:'Commandes de clients français.', hint:'WHERE c.country', solution:"SELECT c.name, o.order_date FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.country = 'France'"},
+  {prompt:'CA total (SUM(quantity * price)).', hint:'SUM + JOIN products', solution:'SELECT SUM(o.quantity * p.price) AS ca FROM orders o JOIN products p ON o.product_id = p.id'},
+  {prompt:'CA par catégorie, trié décroissant.', hint:'GROUP BY + ORDER BY', solution:'SELECT p.category, SUM(o.quantity * p.price) AS ca FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.category ORDER BY ca DESC'},
+  {prompt:'Top 3 produits les plus vendus (qté).', hint:'SUM + LIMIT 3', solution:'SELECT p.name, SUM(o.quantity) AS total FROM orders o JOIN products p ON o.product_id = p.id GROUP BY p.id, p.name ORDER BY total DESC LIMIT 3'}
+ ]},
+{id:'ch7',emoji:'7️⃣',title:'Sous-requêtes',
+ summary:'Une requête à l\'intérieur d\'une autre.',
+ theory:`<h3>Sous-requêtes</h3>
+ <p>Requête entre parenthèses dans une autre. Trois usages :</p>
+ <ol>
+   <li><strong>Scalaire</strong> — renvoie 1 valeur : <code>WHERE price > (SELECT AVG(price) FROM products)</code></li>
+   <li><strong>IN</strong> — liste : <code>WHERE id IN (SELECT customer_id FROM orders)</code></li>
+   <li><strong>EXISTS</strong> — existence : <code>WHERE EXISTS (SELECT 1 FROM ...)</code></li>
+ </ol>`,
+ tps:[
+  {prompt:'Produits dont le prix dépasse la moyenne.', hint:'> (SELECT AVG(price) ...)', solution:'SELECT * FROM products WHERE price > (SELECT AVG(price) FROM products)'},
+  {prompt:'Produits dont le prix est inférieur à la moyenne.', hint:'< (SELECT AVG ...)', solution:'SELECT * FROM products WHERE price < (SELECT AVG(price) FROM products)'},
+  {prompt:'Clients ayant au moins une commande (IN).', hint:'IN (SELECT customer_id FROM orders)', solution:'SELECT name FROM customers WHERE id IN (SELECT customer_id FROM orders)'},
+  {prompt:'Clients n\'ayant jamais commandé (NOT IN).', hint:'NOT IN', solution:'SELECT name FROM customers WHERE id NOT IN (SELECT customer_id FROM orders)'},
+  {prompt:'Produits déjà commandés.', hint:'IN', solution:'SELECT name FROM products WHERE id IN (SELECT product_id FROM orders)'},
+  {prompt:'Produit le plus cher via sous-requête.', hint:'= (SELECT MAX(price) ...)', solution:'SELECT name, price FROM products WHERE price = (SELECT MAX(price) FROM products)'},
+  {prompt:'Produit le moins cher.', hint:'= (SELECT MIN(price) ...)', solution:'SELECT name, price FROM products WHERE price = (SELECT MIN(price) FROM products)'},
+  {prompt:'Produits plus chers que la moyenne de leur catégorie.', hint:'Corrélation avec p.category', solution:'SELECT p.name, p.price, p.category FROM products p WHERE p.price > (SELECT AVG(price) FROM products WHERE category = p.category)'},
+  {prompt:'Clients ayant commandé un produit Audio.', hint:'Sous-requête + JOIN', solution:"SELECT DISTINCT c.name FROM customers c WHERE c.id IN (SELECT o.customer_id FROM orders o JOIN products p ON o.product_id = p.id WHERE p.category = 'Audio')"}
+ ]},
+{id:'ch8',emoji:'8️⃣',title:'CASE WHEN',
+ summary:'Logique conditionnelle dans une colonne.',
+ theory:`<h3>CASE WHEN</h3>
+ <pre>CASE WHEN cond1 THEN val1 WHEN cond2 THEN val2 ELSE defaut END</pre>
+ <p>Utile pour catégoriser, compter conditionnellement, marquer.</p>
+ <pre>SELECT name, price,
+  CASE WHEN price &lt; 50 THEN 'Petit prix'
+       WHEN price &lt; 300 THEN 'Standard'
+       ELSE 'Premium' END AS gamme
+FROM products;</pre>`,
+ tps:[
+  {prompt:'Nom, prix et <code>gamme</code> : Petit prix (&lt;50), Standard (&lt;300), Premium.', hint:'CASE WHEN imbriqué', solution:"SELECT name, price, CASE WHEN price < 50 THEN 'Petit prix' WHEN price < 300 THEN 'Standard' ELSE 'Premium' END AS gamme FROM products"},
+  {prompt:'Nom et <code>dispo</code> Oui/Non selon stock > 0.', hint:'CASE WHEN stock > 0', solution:"SELECT name, CASE WHEN stock > 0 THEN 'Oui' ELSE 'Non' END AS dispo FROM products"},
+  {prompt:'Compter produits Premium (≥300) et autres.', hint:'SUM(CASE WHEN ... THEN 1)', solution:'SELECT SUM(CASE WHEN price >= 300 THEN 1 ELSE 0 END) AS premium, SUM(CASE WHEN price < 300 THEN 1 ELSE 0 END) AS autres FROM products'},
+  {prompt:'Nom, stock et <code>alerte</code> ⚠️ si stock &lt; 20.', hint:'CASE', solution:"SELECT name, stock, CASE WHEN stock < 20 THEN '⚠️' ELSE '' END AS alerte FROM products"},
+  {prompt:'Nombre de produits chers (&gt;200) et bon marché (≤200).', hint:'SUM(CASE)', solution:'SELECT SUM(CASE WHEN price > 200 THEN 1 ELSE 0 END) AS chers, SUM(CASE WHEN price <= 200 THEN 1 ELSE 0 END) AS bon_marche FROM products'}
+ ]},
+{id:'ch9',emoji:'9️⃣',title:'Fonctions texte',
+ summary:'Manipuler des chaînes de caractères.',
+ theory:`<h3>Fonctions texte</h3>
+ <ul>
+   <li><code>UPPER(s)</code> / <code>LOWER(s)</code></li>
+   <li><code>LENGTH(s)</code> — longueur</li>
+   <li><code>SUBSTR(s, début, longueur)</code></li>
+   <li><code>TRIM(s)</code> — enlève espaces</li>
+   <li><code>REPLACE(s, a, b)</code></li>
+   <li><code>||</code> — concaténation</li>
+ </ul>
+ <pre>SELECT UPPER(name) FROM products;
+SELECT name || ' (' || category || ')' FROM products;</pre>`,
+ tps:[
+  {prompt:'Noms de produits en MAJUSCULES.', hint:'UPPER(name)', solution:'SELECT UPPER(name) FROM products'},
+  {prompt:'Noms de clients en minuscules.', hint:'LOWER(name)', solution:'SELECT LOWER(name) FROM customers'},
+  {prompt:'Nom + longueur du nom pour chaque produit.', hint:'LENGTH(name)', solution:'SELECT name, LENGTH(name) AS longueur FROM products'},
+  {prompt:'Nom + première lettre du nom.', hint:'SUBSTR(name,1,1)', solution:'SELECT name, SUBSTR(name, 1, 1) AS initiale FROM products'},
+  {prompt:'Description <code>Nom (Catégorie)</code> pour chaque produit.', hint:'|| concaténation', solution:"SELECT name || ' (' || category || ')' AS description FROM products"},
+  {prompt:'Remplacer <code>Casque</code> par <code>Headset</code>.', hint:'REPLACE', solution:"SELECT REPLACE(name, 'Casque', 'Headset') FROM products"}
+ ]},
+{id:'ch10',emoji:'🔟',title:'Fonctions de date',
+ summary:'Extraire année, mois, jour d\'une date.',
+ theory:`<h3>Dates (SQLite)</h3>
+ <ul>
+   <li><code>strftime('%Y', date)</code> — année</li>
+   <li><code>strftime('%m', date)</code> — mois</li>
+   <li><code>strftime('%d', date)</code> — jour</li>
+   <li><code>date('now')</code> — aujourd'hui</li>
+ </ul>
+ <pre>SELECT id, strftime('%Y', order_date) AS annee FROM orders;</pre>`,
+ tps:[
+  {prompt:'Année de chaque commande.', hint:"strftime('%Y', order_date)", solution:"SELECT id, strftime('%Y', order_date) AS annee FROM orders"},
+  {prompt:'Mois de chaque commande.', hint:"strftime('%m', ...)", solution:"SELECT id, strftime('%m', order_date) AS mois FROM orders"},
+  {prompt:'Commandes de 2024.', hint:'WHERE strftime', solution:"SELECT * FROM orders WHERE strftime('%Y', order_date) = '2024'"},
+  {prompt:'Commandes de janvier (mois = 01).', hint:"strftime('%m') = '01'", solution:"SELECT * FROM orders WHERE strftime('%m', order_date) = '01'"},
+  {prompt:'Nombre de commandes par mois.', hint:'GROUP BY mois', solution:"SELECT strftime('%m', order_date) AS mois, COUNT(*) AS nb FROM orders GROUP BY mois ORDER BY mois"},
+  {prompt:'Nombre de commandes par année.', hint:'GROUP BY annee', solution:"SELECT strftime('%Y', order_date) AS annee, COUNT(*) AS nb FROM orders GROUP BY annee"}
+ ]},
+{id:'ch11',emoji:'1️⃣1️⃣',title:'Fonctions de fenêtrage',
+ summary:'Classer, cumuler, comparer sans regrouper.',
+ theory:`<h3>Window functions</h3>
+ <pre>FONCTION() OVER (PARTITION BY ... ORDER BY ...)</pre>
+ <ul>
+   <li><code>ROW_NUMBER()</code> — 1, 2, 3…</li>
+   <li><code>RANK()</code> — 1, 2, 2, 4 (avec ex-aequo)</li>
+   <li><code>DENSE_RANK()</code> — 1, 2, 2, 3</li>
+   <li><code>SUM() OVER (...)</code> — cumul</li>
+   <li><code>LAG()</code> / <code>LEAD()</code> — ligne précédente / suivante</li>
+ </ul>
+ <pre>SELECT name, price,
+  RANK() OVER (ORDER BY price DESC) AS rang
+FROM products;</pre>`,
+ tps:[
+  {prompt:'Rang de chaque produit par prix décroissant.', hint:'RANK() OVER (ORDER BY price DESC)', solution:'SELECT name, price, RANK() OVER (ORDER BY price DESC) AS rang FROM products'},
+  {prompt:'Rang de chaque produit dans sa catégorie.', hint:'PARTITION BY category', solution:'SELECT name, category, price, RANK() OVER (PARTITION BY category ORDER BY price DESC) AS rang_cat FROM products'},
+  {prompt:'Stock cumulé dans l\'ordre des ids.', hint:'SUM(stock) OVER (ORDER BY id)', solution:'SELECT name, stock, SUM(stock) OVER (ORDER BY id) AS cumul FROM products'},
+  {prompt:'Garder seulement le rang 1 de chaque catégorie (par prix desc).', hint:'Sous-requête + WHERE rang = 1', solution:'SELECT * FROM (SELECT name, category, price, RANK() OVER (PARTITION BY category ORDER BY price DESC) AS rang FROM products) WHERE rang = 1'}
+ ]},
+{id:'ch12',emoji:'1️⃣2️⃣',title:'INSERT / UPDATE / DELETE',
+ summary:'Modifier les données (attention !).',
+ theory:`<h3>Modifier les données</h3>
+ <p>⚠️ Ces commandes modifient vraiment la base. Toujours un <code>WHERE</code> avec UPDATE et DELETE.</p>
+ <pre>INSERT INTO t (col1, col2) VALUES ('a', 1);
+UPDATE t SET col1 = 'b' WHERE id = 1;
+DELETE FROM t WHERE id = 1;</pre>
+ <p>Sans WHERE : tu modifies/supprimes TOUTE la table.</p>`,
+ tps:[
+  {prompt:'Ajouter un produit Test (catégorie Test, prix 9.99, stock 10).', hint:'INSERT INTO products (name, category, price, stock) VALUES (...)', solution:"INSERT INTO products (name, category, price, stock) VALUES ('Test', 'Test', 9.99, 10)"},
+  {prompt:'Augmenter de 10% le prix des produits Audio.', hint:'UPDATE ... SET price = price * 1.1', solution:"UPDATE products SET price = price * 1.10 WHERE category = 'Audio'"},
+  {prompt:'Supprimer les produits dont le prix est 0.', hint:'DELETE WHERE price = 0', solution:'DELETE FROM products WHERE price = 0'},
+  {prompt:'Mettre le stock à 0 des produits Informatique.', hint:'UPDATE SET stock = 0', solution:"UPDATE products SET stock = 0 WHERE category = 'Informatique'"}
+ ]}
+];
+
+/* =========================================================
+   ARCADE DATA
    ========================================================= */
 const QUIZ_QS = [
-  {q:"Que fait l'astérisque * dans SELECT * ?", opts:["Sélectionne une colonne","Sélectionne toutes les colonnes","Multiplie","Supprime tout"], a:1, exp:"* signifie « toutes les colonnes »."},
-  {q:"Quel mot-clé filtre les lignes ?", opts:["WHERE","HAVING","ORDER BY","LIMIT"], a:0, exp:"WHERE filtre les lignes selon une condition."},
+  {q:"Que fait * dans SELECT * ?", opts:["Une colonne","Toutes les colonnes","Multiplie","Supprime"], a:1, exp:"* signifie toutes les colonnes."},
+  {q:"Quel mot-clé filtre les lignes ?", opts:["WHERE","HAVING","ORDER BY","LIMIT"], a:0, exp:"WHERE filtre les lignes."},
   {q:"Quelle fonction compte les lignes ?", opts:["SUM","COUNT","AVG","MAX"], a:1, exp:"COUNT compte les lignes."},
-  {q:"ORDER BY price DESC trie comment ?", opts:["Croissant","Aléatoire","Décroissant","Alphabétique"], a:2, exp:"DESC = décroissant (du plus grand au plus petit)."},
-  {q:"Quelle jointure garde tous les éléments de gauche ?", opts:["INNER JOIN","LEFT JOIN","CROSS JOIN","Aucune"], a:1, exp:"LEFT JOIN garde toutes les lignes de la table de gauche."},
-  {q:"Quelle clause filtre les groupes ?", opts:["WHERE","ORDER BY","HAVING","GROUP BY"], a:2, exp:"HAVING filtre après le GROUP BY."},
-  {q:"Quelle fonction calcule une moyenne ?", opts:["SUM","COUNT","AVG","MEAN"], a:2, exp:"AVG(col) calcule la moyenne."},
-  {q:"Comment écrire une chaîne de texte en SQL ?", opts:["\"texte\"","'texte'","[texte]","{texte}"], a:1, exp:"Les chaînes s'écrivent entre apostrophes simples en SQL standard."},
-  {q:"Quelle commande ajoute des lignes ?", opts:["INSERT","UPDATE","CREATE","ADD"], a:0, exp:"INSERT INTO ajoute des lignes."},
-  {q:"Le symbole % dans LIKE signifie ?", opts:["Un caractère","Zéro caractère","Plusieurs caractères","Un chiffre"], a:2, exp:"% = n'importe quelle suite de caractères."},
-  {q:"LIMIT 5 fait quoi ?", opts:["Garde 5 lignes","Supprime 5 lignes","Ajoute 5 lignes","Trie 5 lignes"], a:0, exp:"LIMIT 5 garde seulement 5 lignes."},
-  {q:"Quel opérateur vérifie NULL ?", opts:["= NULL","== NULL","IS NULL","NULL()"], a:2, exp:"On utilise IS NULL (pas = NULL)."},
-  {q:"DISTINCT fait quoi ?", opts:["Supprime les doublons","Trie les lignes","Groupe les lignes","Compte les lignes"], a:0, exp:"DISTINCT supprime les valeurs en double."},
-  {q:"Quelle jointure produit toutes les combinaisons ?", opts:["INNER JOIN","LEFT JOIN","CROSS JOIN","RIGHT JOIN"], a:2, exp:"CROSS JOIN fait le produit cartésien."},
-  {q:"Quelle fonction retourne le maximum ?", opts:["TOP","MAX","HIGH","GREATEST"], a:1, exp:"MAX(col) retourne la valeur maximale."}
+  {q:"ORDER BY x DESC trie comment ?", opts:["Croissant","Aléatoire","Décroissant","A-Z"], a:2, exp:"DESC = décroissant."},
+  {q:"Quelle jointure garde tout à gauche ?", opts:["INNER","LEFT","CROSS","Aucune"], a:1, exp:"LEFT JOIN garde tout à gauche."},
+  {q:"Quelle clause filtre les groupes ?", opts:["WHERE","ORDER BY","HAVING","GROUP BY"], a:2, exp:"HAVING filtre après GROUP BY."},
+  {q:"Quelle fonction calcule une moyenne ?", opts:["SUM","COUNT","AVG","MEAN"], a:2, exp:"AVG(col)."},
+  {q:"Comment écrire une chaîne ?", opts:['"txt"',"'txt'",'[txt]','{txt}'], a:1, exp:"Apostrophes simples."},
+  {q:"Quelle commande ajoute des lignes ?", opts:["INSERT","UPDATE","CREATE","ADD"], a:0, exp:"INSERT INTO."},
+  {q:"Que fait % dans LIKE ?", opts:["1 caractère","0 caractère","Plusieurs caractères","1 chiffre"], a:2, exp:"% = plusieurs caractères."},
+  {q:"LIMIT 5 fait quoi ?", opts:["Garde 5 lignes","Supprime 5","Ajoute 5","Trie 5"], a:0, exp:"Garde 5 lignes."},
+  {q:"Vérifier NULL ?", opts:["= NULL","== NULL","IS NULL","NULL()"], a:2, exp:"IS NULL."},
+  {q:"DISTINCT fait quoi ?", opts:["Dédoublonne","Trie","Groupe","Compte"], a:0, exp:"Supprime les doublons."},
+  {q:"Produit cartésien ?", opts:["INNER","LEFT","CROSS","RIGHT"], a:2, exp:"CROSS JOIN."},
+  {q:"Fonction maximum ?", opts:["TOP","MAX","HIGH","GREATEST"], a:1, exp:"MAX(col)."}
 ];
-
 const BUG_QS = [
-  {sql:"SELECT nom FROM products", opts:["La colonne s'appelle 'name', pas 'nom'","Il manque WHERE","Il faut SELECT *","Rien à signaler"], a:0, exp:"La colonne s'appelle bien 'name'."},
-  {sql:"SELECT * FROM products WHERE price == 100", opts:["== n'existe pas en SQL, c'est =","Il faut SELECT name","price n'existe pas","Rien à signaler"], a:0, exp:"En SQL on compare avec = (pas ==)."},
-  {sql:"SELECT name price FROM products", opts:["Il manque la virgule entre name et price","Il faut FROM","Il faut WHERE","Rien à signaler"], a:0, exp:"Il faut SELECT name, price FROM products."},
-  {sql:"SELEC * FROM products", opts:["SELEC est une faute, c'est SELECT","Il manque WHERE","Il faut SELECT name","Rien à signaler"], a:0, exp:"Le mot-clé est SELECT."},
-  {sql:"SELECT COUNT(name FROM products", opts:["Il manque une parenthèse fermante","Il faut SELECT *","Il manque FROM","Rien à signaler"], a:0, exp:"COUNT(name) doit être fermé par )."},
-  {sql:"SELECT * FROM products WHERE price BETWEEN 100", opts:["Il manque AND et la borne supérieure","Il faut ORDER BY","Il faut GROUP BY","Rien à signaler"], a:0, exp:"BETWEEN a AND b — deux bornes obligatoires."},
-  {sql:"SELECT * FROM products WHERE category = Audio", opts:["Audio doit être entre apostrophes","Il faut SELECT name","Il manque FROM","Rien à signaler"], a:0, exp:"'Audio' entre apostrophes simples."},
-  {sql:"SELECT name AS FROM products", opts:["Il manque le nom de l'alias","Il faut SELECT *","Il manque WHERE","Rien à signaler"], a:0, exp:"AS doit être suivi d'un alias : name AS produit."},
-  {sql:"SELECT DISTINCT name, category FROM products GROUP name", opts:["Il faut GROUP BY, pas GROUP name","Il faut SELECT *","Il manque WHERE","Rien à signaler"], a:0, exp:"La clause est GROUP BY colonne."},
-  {sql:"SELECT * FROM products ORDER price ASC", opts:["Il manque BY après ORDER","Il faut WHERE","Il faut GROUP BY","Rien à signaler"], a:0, exp:"La clause est ORDER BY, pas ORDER seul."}
+  {sql:"SELECT nom FROM products", opts:["Colonne 'name', pas 'nom'","Manque WHERE","Il faut SELECT *","OK"], a:0, exp:"Colonne 'name'."},
+  {sql:"SELECT * FROM products WHERE price == 100", opts:["== n'existe pas, c'est =","Il faut SELECT name","price n'existe pas","OK"], a:0, exp:"= pour comparer."},
+  {sql:"SELECT name price FROM products", opts:["Virgule manquante","Il faut FROM","Il faut WHERE","OK"], a:0, exp:"SELECT name, price."},
+  {sql:"SELEC * FROM products", opts:["SELEC → SELECT","Manque WHERE","Il faut name","OK"], a:0, exp:"Mot-clé = SELECT."},
+  {sql:"SELECT COUNT(name FROM products", opts:["Parenthèse fermante manquante","Il faut SELECT *","Manque FROM","OK"], a:0, exp:"COUNT(name)."},
+  {sql:"SELECT * FROM products WHERE price BETWEEN 100", opts:["Manque AND + borne sup.","Il faut ORDER BY","Il faut GROUP BY","OK"], a:0, exp:"BETWEEN a AND b."},
+  {sql:"SELECT * FROM products WHERE category = Audio", opts:["'Audio' entre apostrophes","Il faut name","Manque FROM","OK"], a:0, exp:"Chaînes entre apostrophes."},
+  {sql:"SELECT name AS FROM products", opts:["Alias manquant","Il faut SELECT *","Manque WHERE","OK"], a:0, exp:"name AS produit."},
+  {sql:"SELECT DISTINCT name, category FROM products GROUP name", opts:["GROUP BY, pas GROUP name","Il faut SELECT *","Manque WHERE","OK"], a:0, exp:"GROUP BY colonne."},
+  {sql:"SELECT * FROM products ORDER price ASC", opts:["ORDER BY, pas ORDER","Il faut WHERE","GROUP BY","OK"], a:0, exp:"ORDER BY."}
 ];
-
 const OUTPUT_QS = [
-  {sql:"SELECT COUNT(*) FROM products WHERE category = 'Audio'", opts:["3","4","15","0"], a:1, exp:"Il y a 4 produits Audio : Casque audio, Enceinte Bluetooth, Micro de studio, Casque gamer."},
-  {sql:"SELECT name FROM products WHERE price > 1000", opts:["Laptop Pro","Laptop Pro, Tablette 10 pouces","Aucun","Tous"], a:0, exp:"Seul Laptop Pro dépasse 1000 (1299.99)."},
-  {sql:"SELECT COUNT(DISTINCT country) FROM customers", opts:["10","13","3","0"], a:0, exp:"10 pays distincts parmi les 13 clients (France apparaît 3 fois, Italie 2 fois)."},
-  {sql:"SELECT MAX(price) FROM products", opts:["1299.99","449.00","199.99","300"], a:0, exp:"Laptop Pro à 1299.99 est le plus cher."},
-  {sql:"SELECT COUNT(*) FROM orders WHERE customer_id = 1", opts:["4","1","3","0"], a:0, exp:"Alice Martin a 4 commandes (ids 1, 3, 12, 20)."},
-  {sql:"SELECT COUNT(*) FROM products", opts:["15","13","30","10"], a:0, exp:"Il y a 15 produits dans la table."},
-  {sql:"SELECT name FROM products WHERE stock = 300", opts:["Câble USB-C","Laptop Pro","Souris sans fil","Aucun"], a:0, exp:"Le Câble USB-C a un stock de 300."},
-  {sql:"SELECT MIN(price) FROM products", opts:["14.99","29.99","0","9.99"], a:0, exp:"Le Câble USB-C à 14.99 est le moins cher."},
-  {sql:"SELECT COUNT(*) FROM customers WHERE country = 'France'", opts:["3","2","13","1"], a:0, exp:"Alice, Bob et Jules = 3 clients français."},
-  {sql:"SELECT COUNT(*) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.country = 'Italie'", opts:["4","2","1","0"], a:0, exp:"Carla (2 commandes) + Luca (2) = 4."}
+  {sql:"SELECT COUNT(*) FROM products WHERE category = 'Audio'", opts:["3","4","15","0"], a:1, exp:"4 produits Audio."},
+  {sql:"SELECT name FROM products WHERE price > 1000", opts:["Laptop Pro","Tablette","Aucun","Tous"], a:0, exp:"Laptop Pro à 1299.99."},
+  {sql:"SELECT COUNT(DISTINCT country) FROM customers", opts:["10","13","3","0"], a:0, exp:"10 pays distincts."},
+  {sql:"SELECT MAX(price) FROM products", opts:["1299.99","449.00","199.99","300"], a:0, exp:"Laptop Pro."},
+  {sql:"SELECT COUNT(*) FROM orders WHERE customer_id = 1", opts:["4","1","3","0"], a:0, exp:"Alice a 4 commandes."},
+  {sql:"SELECT COUNT(*) FROM products", opts:["15","13","30","10"], a:0, exp:"15 produits."},
+  {sql:"SELECT name FROM products WHERE stock = 300", opts:["Câble USB-C","Laptop","Souris","Aucun"], a:0, exp:"Câble USB-C."},
+  {sql:"SELECT MIN(price) FROM products", opts:["14.99","29.99","0","9.99"], a:0, exp:"Câble USB-C à 14.99."},
+  {sql:"SELECT COUNT(*) FROM customers WHERE country = 'France'", opts:["3","2","13","1"], a:0, exp:"3 clients français."},
+  {sql:"SELECT COUNT(*) FROM orders o JOIN customers c ON o.customer_id = c.id WHERE c.country = 'Italie'", opts:["4","2","1","0"], a:0, exp:"Carla + Luca = 4."}
 ];
-
 const ARCADE = {
-  quiz:   {name:'Quiz Éclair',      emoji:'🎯', desc:'15 questions SQL, choisis la bonne réponse.', data:QUIZ_QS, xpPer:2},
-  bug:    {name:'Chasse au Bug',    emoji:'🔍', desc:"Trouve l'erreur dans chaque requête SQL.", data:BUG_QS, xpPer:3},
-  output: {name:'Devine la Sortie', emoji:'🧠', desc:'Prédis le résultat de la requête.',          data:OUTPUT_QS, xpPer:3},
-  speed:  {name:'Speed Run',        emoji:'⚡', desc:'60 secondes pour un max de bonnes réponses.', data:[...QUIZ_QS, ...OUTPUT_QS], xpPer:2}
+  quiz:{name:'Quiz Éclair',emoji:'🎯',desc:'15 questions SQL.',data:QUIZ_QS,xpPer:2},
+  bug:{name:'Chasse au Bug',emoji:'🔍',desc:"Trouve l'erreur SQL.",data:BUG_QS,xpPer:3},
+  output:{name:'Devine la Sortie',emoji:'🧠',desc:'Prédis le résultat.',data:OUTPUT_QS,xpPer:3},
+  speed:{name:'Speed Run',emoji:'⚡',desc:'60 secondes, max de bonnes réponses.',data:[...QUIZ_QS,...OUTPUT_QS],xpPer:2}
 };
 
 /* =========================================================
-   4. BADGES
+   BADGES
    ========================================================= */
 const BADGES = [
-  {id:'first',   icon:'🩸', name:'Premier sang',    desc:'Résoudre 1 exercice',     check:s=>totalSolved()>=1},
-  {id:'ten',     icon:'🔟', name:'Dix sur dix',     desc:'Résoudre 10 exercices',   check:s=>totalSolved()>=10},
-  {id:'thirty',  icon:'🏆', name:'Trente glorieuses',desc:'Résoudre 30 exercices',  check:s=>totalSolved()>=30},
-  {id:'w1',      icon:'🌅', name:'Éveillé',         desc:'Terminer le Monde 1',     check:s=>worldDone('w1')},
-  {id:'w2',      icon:'📊', name:'Ordonnateur',     desc:'Terminer le Monde 2',     check:s=>worldDone('w2')},
-  {id:'w3',      icon:'🔗', name:'Lieur de tables', desc:'Terminer le Monde 3',     check:s=>worldDone('w3')},
-  {id:'perfect', icon:'💎', name:'Sans faute',      desc:'Une leçon 3 étoiles',     check:s=>Object.values(s.lessons).some(l=>l.stars===3)},
-  {id:'streak3', icon:'🔥', name:'Série de 3',      desc:'3 jours consécutifs',     check:s=>s.streak.count>=3},
-  {id:'xp500',   icon:'⚡', name:'500 XP',          desc:'Atteindre 500 XP',        check:s=>s.xp>=500},
-  {id:'arcade',  icon:'🕹️', name:'Gamer',           desc:'Jouer à 1 jeu arcade',    check:s=>(s.scores.quiz||0)>0||(s.scores.bug||0)>0||(s.scores.output||0)>0||(s.scores.speed||0)>0},
-  {id:'perfectq',icon:'🎯', name:'Sniper',          desc:'Quiz parfait 15/15',      check:s=>s.scores.quiz>=15},
-  {id:'speed20', icon:'💨', name:'Speed Demon',     desc:'20+ en Speed Run',        check:s=>s.scores.speed>=20},
-  {id:'master',  icon:'👑', name:'Maître SQL',      desc:'Terminer tout le parcours',check:s=>allDone()}
+  {id:'first',icon:'🩸',name:'Premier sang',desc:'1 exercice résolu',check:s=>totalSolved()>=1},
+  {id:'ten',icon:'🔟',name:'Dix sur dix',desc:'10 exercices',check:s=>totalSolved()>=10},
+  {id:'thirty',icon:'🏆',name:'Trente glorieuses',desc:'30 exercices',check:s=>totalSolved()>=30},
+  {id:'w1',icon:'🌅',name:'Éveillé',desc:'Monde 1 terminé',check:s=>worldDone('w1')},
+  {id:'w2',icon:'📊',name:'Ordonnateur',desc:'Monde 2 terminé',check:s=>worldDone('w2')},
+  {id:'w3',icon:'🔗',name:'Lieur de tables',desc:'Monde 3 terminé',check:s=>worldDone('w3')},
+  {id:'perfect',icon:'💎',name:'Sans faute',desc:'Une leçon 3 étoiles',check:s=>Object.values(s.lessons).some(l=>l.stars===3)},
+  {id:'streak3',icon:'🔥',name:'Série de 3',desc:'3 jours consécutifs',check:s=>s.streak.count>=3},
+  {id:'xp500',icon:'⚡',name:'500 XP',desc:'Atteindre 500 XP',check:s=>s.xp>=500},
+  {id:'arcade',icon:'🕹️',name:'Gamer',desc:'1 jeu arcade joué',check:s=>(s.scores.quiz||0)>0||(s.scores.bug||0)>0||(s.scores.output||0)>0||(s.scores.speed||0)>0},
+  {id:'perfectq',icon:'🎯',name:'Sniper',desc:'Quiz 15/15',check:s=>s.scores.quiz>=15},
+  {id:'speed20',icon:'💨',name:'Speed Demon',desc:'20+ Speed Run',check:s=>s.scores.speed>=20},
+  {id:'academy',icon:'📚',name:'Étudiant',desc:'Un TP académie fait',check:s=>Object.keys(s.academy||{}).length>=1},
+  {id:'scholar',icon:'🎓',name:'Érudit',desc:'10 TP académie faits',check:s=>Object.keys(s.academy||{}).length>=10},
+  {id:'master',icon:'👑',name:'Maître SQL',desc:'Tout terminé',check:s=>allDone()}
 ];
 
 /* =========================================================
-   5. STATE
+   STATE
    ========================================================= */
 const SAVE_KEY = 'sqlquest_v1';
 let state = loadState();
@@ -862,34 +829,35 @@ function loadState(){
     const raw = localStorage.getItem(SAVE_KEY);
     if(raw){
       const s = JSON.parse(raw);
-      s.ex = s.ex || {}; s.lessons = s.lessons || {}; s.badges = s.badges || [];
-      s.streak = s.streak || {count:0, last:null}; s.xp = s.xp || 0;
-      s.scores = s.scores || {quiz:0, bug:0, output:0, speed:0};
-      s.tts = s.tts !== false;
+      s.ex=s.ex||{};s.lessons=s.lessons||{};s.badges=s.badges||[];
+      s.streak=s.streak||{count:0,last:null};s.xp=s.xp||0;
+      s.scores=s.scores||{quiz:0,bug:0,output:0,speed:0};
+      s.academy=s.academy||{};
+      s.tts=s.tts!==false;
       return s;
     }
   }catch(e){}
-  return {xp:0, ex:{}, lessons:{}, badges:[], streak:{count:0,last:null},
-          scores:{quiz:0,bug:0,output:0,speed:0}, tts:true};
+  return {xp:0,ex:{},lessons:{},badges:[],streak:{count:0,last:null},
+          scores:{quiz:0,bug:0,output:0,speed:0},academy:{},tts:true};
 }
 function saveState(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
 function touchStreak(){
-  const t = todayStr();
-  if(state.streak.last === t) return;
-  state.streak.count = (state.streak.last === yesterdayStr()) ? state.streak.count + 1 : 1;
+  const t=todayStr();
+  if(state.streak.last===t) return;
+  state.streak.count = (state.streak.last===yesterdayStr()) ? state.streak.count+1 : 1;
   state.streak.last = t;
   saveState();
-  if(state.streak.count >= 2) toast('🔥 Série de ' + state.streak.count + ' jours !');
+  if(state.streak.count>=2) toast('🔥 Série de ' + state.streak.count + ' jours !');
 }
 function totalSolved(){ return Object.keys(state.ex).length; }
 function lessonDone(id){
-  const l = findLesson(id);
-  return l.exercises.every((_,i)=> state.ex[id+':'+i] !== undefined);
+  const l=findLesson(id);
+  return l.exercises.every((_,i)=> state.ex[id+':'+i]!==undefined);
 }
 function worldDone(wid){
-  const w = CURRICULUM.find(w=>w.id===wid);
+  const w=CURRICULUM.find(w=>w.id===wid);
   return w.lessons.every(l=>lessonDone(l.id));
 }
 function allDone(){ return CURRICULUM.every(w=>worldDone(w.id)); }
@@ -898,195 +866,103 @@ function findLesson(id){
   return null;
 }
 function lessonStars(id){
-  const l = findLesson(id); let sum=0, n=0;
-  l.exercises.forEach((_,i)=>{ const st = state.ex[id+':'+i]; if(st!==undefined){sum+=st;n++;} });
+  const l=findLesson(id); let sum=0,n=0;
+  l.exercises.forEach((_,i)=>{ const st=state.ex[id+':'+i]; if(st!==undefined){sum+=st;n++;} });
   return n ? Math.round(sum/n) : 0;
 }
 function levelInfo(){
-  const lvl = Math.floor(state.xp/100)+1;
-  const base = (lvl-1)*100;
-  return {level:lvl, into:state.xp-base, need:100, pct:Math.min(100,((state.xp-base)/100)*100)};
+  const lvl=Math.floor(state.xp/100)+1;
+  const base=(lvl-1)*100;
+  return {level:lvl,into:state.xp-base,need:100,pct:Math.min(100,((state.xp-base)/100)*100)};
+}
+function chapterTpDone(chId){
+  const ch=ACADEMY.find(c=>c.id===chId);
+  return ch.tps.filter((_,i)=> state.academy[chId+':'+i]).length;
 }
 
 /* =========================================================
-   6. TTS — VERSION MOBILE-ROBUSTE
+   TTS
    ========================================================= */
-let ttsVoice = null;
-let ttsUnlocked = false;
-let ttsLastError = null;
-
+let ttsVoice=null, ttsUnlocked=false;
 function initTTS(){
-  if(!('speechSynthesis' in window)){
-    ttsLastError = 'speechSynthesis non supporté';
-    console.warn('TTS: speechSynthesis not available');
-    return;
-  }
-
-  const loadVoices = () => {
-    const voices = window.speechSynthesis.getVoices();
-    if(voices.length === 0) return;
-    ttsVoice = voices.find(v => v.lang === 'fr-FR')
-            || voices.find(v => v.lang.startsWith('fr'))
-            || null;
-    if(!ttsVoice){
-      ttsLastError = 'Aucune voix française installée';
-      console.warn('TTS: no French voice. Available:', voices.map(v => v.lang));
-    } else {
-      console.log('TTS: voix chargée →', ttsVoice.name, ttsVoice.lang);
-    }
+  if(!('speechSynthesis' in window)) return;
+  const loadVoices=()=>{
+    const voices=window.speechSynthesis.getVoices();
+    if(!voices.length) return;
+    ttsVoice = voices.find(v=>v.lang==='fr-FR') || voices.find(v=>v.lang.startsWith('fr')) || null;
   };
-
   loadVoices();
-  if('onvoiceschanged' in window.speechSynthesis){
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-  }
-
-  // Déverrouillage silencieux au tout premier geste utilisateur
-  const unlock = () => {
+  if('onvoiceschanged' in window.speechSynthesis) window.speechSynthesis.onvoiceschanged = loadVoices;
+  const unlock=()=>{
     if(ttsUnlocked) return;
-    try {
-      const u = new SpeechSynthesisUtterance('.');
-      u.volume = 0.01;
-      u.rate = 10;
-      u.pitch = 1;
-      u.lang = 'fr-FR';
-      if(ttsVoice) u.voice = ttsVoice;
+    try{
+      const u=new SpeechSynthesisUtterance('.');
+      u.volume=0.01; u.rate=10; u.lang='fr-FR';
+      if(ttsVoice) u.voice=ttsVoice;
       window.speechSynthesis.speak(u);
-      ttsUnlocked = true;
-      console.log('TTS: unlocked ✓');
-    } catch(e){
-      console.error('TTS unlock failed:', e);
-    }
+      ttsUnlocked=true;
+    }catch(e){}
   };
-
-  ['click','touchstart','touchend','pointerdown','keydown'].forEach(evt => {
-    document.addEventListener(evt, unlock, { once: true, passive: true });
+  ['click','touchstart','touchend','pointerdown','keydown'].forEach(evt=>{
+    document.addEventListener(evt, unlock, {once:true,passive:true});
   });
-
-  // iOS : reprend après verrouillage écran
-  document.addEventListener('visibilitychange', () => {
+  document.addEventListener('visibilitychange', ()=>{
     if(!document.hidden && 'speechSynthesis' in window){
-      try { window.speechSynthesis.resume(); } catch(e){}
+      try{ window.speechSynthesis.resume(); }catch(e){}
     }
   });
 }
-
-// No-op pour compatibilité (le vrai unlock est géré dans initTTS)
-function unlockTTS(){ /* géré globalement */ }
-
-function speak(text, opts = {}){
-  if(!state.tts) return;
-  if(!('speechSynthesis' in window)) return;
-
-  const clean = String(text)
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&[a-z]+;/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+function unlockTTS(){ /* no-op, géré globalement */ }
+function speak(text, opts={}){
+  if(!state.tts || !('speechSynthesis' in window)) return;
+  const clean = String(text).replace(/<[^>]+>/g,' ').replace(/&[a-z]+;/gi,' ').replace(/\s+/g,' ').trim();
   if(!clean) return;
-
-  try {
-    if(window.speechSynthesis.speaking || window.speechSynthesis.pending){
-      window.speechSynthesis.cancel();
-    }
-
-    const doSpeak = () => {
-      try {
-        const u = new SpeechSynthesisUtterance(clean);
-        u.lang = 'fr-FR';
-        u.rate = opts.rate || 1;
-        u.pitch = 1;
-        u.volume = 1;
-        if(ttsVoice) u.voice = ttsVoice;
-
-        u.onerror = (e) => {
-          console.warn('TTS error:', e.error);
-          if(e.error === 'not-allowed'){
-            ttsUnlocked = false;
-            // Réarme le déverrouillage au prochain geste
-            ['click','touchstart','pointerdown'].forEach(evt => {
-              document.addEventListener(evt, function rearm(){
-                try {
-                  const dummy = new SpeechSynthesisUtterance('.');
-                  dummy.volume = 0.01;
-                  window.speechSynthesis.speak(dummy);
-                  ttsUnlocked = true;
-                } catch(err){}
-              }, { once: true, passive: true });
-            });
+  try{
+    if(window.speechSynthesis.speaking || window.speechSynthesis.pending) window.speechSynthesis.cancel();
+    const doSpeak=()=>{
+      try{
+        const u=new SpeechSynthesisUtterance(clean);
+        u.lang='fr-FR'; u.rate=opts.rate||1; u.volume=1;
+        if(ttsVoice) u.voice=ttsVoice;
+        u.onerror=(e)=>{
+          if(e.error==='not-allowed'){
+            ttsUnlocked=false;
             toast('🔇 Touche l\'écran pour activer le son');
-          } else if(e.error === 'voice-unavailable' || e.error === 'language-unavailable'){
-            const retry = new SpeechSynthesisUtterance(clean);
-            retry.lang = 'fr-FR';
-            retry.rate = opts.rate || 1;
-            window.speechSynthesis.speak(retry);
           }
         };
-
         window.speechSynthesis.resume();
         window.speechSynthesis.speak(u);
-      } catch(e){
-        console.error('TTS speak failed:', e);
-      }
+      }catch(e){}
     };
-
-    if(!ttsUnlocked){
-      doSpeak();
-      ttsUnlocked = true;
-    } else {
-      setTimeout(doSpeak, 60);
-    }
-  } catch(e){
-    console.error('TTS error:', e);
-  }
+    if(!ttsUnlocked){ doSpeak(); ttsUnlocked=true; }
+    else setTimeout(doSpeak, 60);
+  }catch(e){}
 }
-
 function toggleTTS(){
   state.tts = !state.tts;
   if(!state.tts && 'speechSynthesis' in window) window.speechSynthesis.cancel();
   saveState();
-  updateTTSBtn();
+  updateTopbar();
   toast(state.tts ? '🔊 Voix activée' : '🔇 Voix désactivée');
   if(state.tts) testAudio();
 }
-
-function updateTTSBtn(){
-  const b = document.getElementById('tts-btn');
-  if(b){ b.textContent = state.tts ? '🔊' : '🔇'; b.classList.toggle('off', !state.tts); }
-}
-
 function speakEl(sel){
-  if(!state.tts){ toast('🔇 Voix désactivée — clique sur 🔊 en haut'); return; }
-  const el = document.querySelector(sel);
+  if(!state.tts){ toast('🔇 Voix désactivée'); return; }
+  const el=document.querySelector(sel);
   if(!el) return;
   speak(el.textContent);
-  const btn = document.querySelector(`[data-speak="${sel}"]`);
-  if(btn){
-    btn.classList.add('speaking');
-    setTimeout(()=>btn.classList.remove('speaking'), 1500);
-  }
+  const btn=document.querySelector(`[data-speak="${sel}"]`);
+  if(btn){ btn.classList.add('speaking'); setTimeout(()=>btn.classList.remove('speaking'), 1500); }
 }
-
-// Bouton de test audio : diagnostic + lecture d'un message
 function testAudio(){
-  if(!state.tts){
-    toast('🔇 La voix est désactivée. Active-la avec le bouton 🔊 en haut.');
-    return;
-  }
-  if(!('speechSynthesis' in window)){
-    alert('❌ Ton navigateur ne supporte pas la synthèse vocale.\n\nEssaie Chrome ou Safari récent.');
-    return;
-  }
-  const voices = window.speechSynthesis.getVoices();
-  if(voices.length === 0){
-    toast('⏳ Chargement des voix… réessaie dans 2 secondes');
-    return;
-  }
-  const fr = voices.find(v => v.lang.startsWith('fr'));
-  if(!fr){
+  if(!state.tts){ toast('🔇 Active la voix avec 🔊'); return; }
+  if(!('speechSynthesis' in window)){ alert('❌ Pas de synthèse vocale sur ce navigateur.'); return; }
+  const voices=window.speechSynthesis.getVoices();
+  if(!voices.length){ toast('⏳ Chargement des voix… réessaie dans 2s'); return; }
+  if(!voices.find(v=>v.lang.startsWith('fr'))){
     alert('⚠️ Aucune voix française installée.\n\n' +
-      'Sur Android : Paramètres → Langue → Synthèse vocale → installer Français\n' +
-      'Sur iOS : Réglages → Accessibilité → Contenu énoncé → Voix → Français');
+      'Android : Paramètres → Langue → Synthèse vocale → Français\n' +
+      'iOS : Réglages → Accessibilité → Contenu énoncé → Voix → Français');
     return;
   }
   speak('Bonjour ! Je suis ta guide SQL Quest. Si tu entends ce message, tout fonctionne correctement.');
@@ -1094,120 +970,122 @@ function testAudio(){
 }
 
 /* =========================================================
-   7. SQL ENGINE
+   SQL ENGINE
    ========================================================= */
-let db = null, expectedCache = {};
+let db=null, expectedCache={};
 async function initDB(){
-  const SQL = await initSqlJs({
-    locateFile: f => 'https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/' + f
-  });
+  const SQL = await initSqlJs({ locateFile: f => 'https://cdn.jsdelivr.net/npm/sql.js@1.10.2/dist/' + f });
   db = new SQL.Database();
   db.run(DB_SQL);
 }
 function execSQL(sql){
   const res = db.exec(sql);
-  if(!res || res.length === 0) return {columns:[], values:[]};
+  if(!res || res.length===0) return {columns:[],values:[]};
   return res[res.length-1];
 }
 function normVal(v){
-  if(v === null || v === undefined) return '\u0000NULL';
-  if(typeof v === 'number'){
-    if(Number.isInteger(v)) return String(v);
-    return String(Math.round(v*100)/100);
-  }
+  if(v===null || v===undefined) return '\u0000NULL';
+  if(typeof v==='number') return Number.isInteger(v) ? String(v) : String(Math.round(v*100)/100);
   if(v instanceof Uint8Array) return '[blob]';
   return String(v);
 }
 function normalize(res, ordered){
-  const rows = res.values.map(r => r.map(normVal));
+  const rows = res.values.map(r=>r.map(normVal));
   if(!ordered) rows.sort((a,b)=>JSON.stringify(a)<JSON.stringify(b)?-1:1);
   return {cols:res.columns.length, rows, colNames:res.columns};
 }
-function resultsEqual(a, b){
-  if(a.cols !== b.cols || a.rows.length !== b.rows.length) return false;
+function resultsEqual(a,b){
+  if(a.cols!==b.cols || a.rows.length!==b.rows.length) return false;
   for(let i=0;i<a.rows.length;i++)
     for(let j=0;j<a.rows[i].length;j++)
-      if(a.rows[i][j] !== b.rows[i][j]) return false;
+      if(a.rows[i][j]!==b.rows[i][j]) return false;
   return true;
 }
 function getExpected(lessonId, idx){
-  const key = lessonId+':'+idx;
+  const key=lessonId+':'+idx;
   if(expectedCache[key]) return expectedCache[key];
-  const l = findLesson(lessonId); const ex = l.exercises[idx];
+  const l=findLesson(lessonId); const ex=l.exercises[idx];
   return expectedCache[key] = normalize(execSQL(ex.solution), !!ex.ordered);
 }
 
 /* =========================================================
-   8. UI HELPERS
+   UI HELPERS
    ========================================================= */
 const app = document.getElementById('app');
 function toast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2600);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'), 2600);
 }
 function updateTopbar(){
-  const li = levelInfo();
+  const li=levelInfo();
   document.getElementById('s-streak').textContent = state.streak.count;
   document.getElementById('s-xp').textContent = state.xp;
   document.getElementById('s-level').textContent = li.level;
   document.getElementById('xp-lvl-label').textContent = 'Niveau ' + li.level;
   document.getElementById('xp-next-label').textContent = li.into + ' / ' + li.need;
   document.getElementById('xp-fill').style.width = li.pct + '%';
-  updateTTSBtn();
-  const tb = document.getElementById('test-audio-btn');
+  const btn=document.getElementById('tts-btn');
+  if(btn){ btn.textContent = state.tts ? '🔊' : '🔇'; btn.classList.toggle('off', !state.tts); }
+  const tb=document.getElementById('test-audio-btn');
   if(tb) tb.classList.toggle('off', !state.tts);
 }
 function esc(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-
 document.addEventListener('click', e=>{
-  const t = e.target.closest('[data-speak]');
+  const t=e.target.closest('[data-speak]');
   if(t){ e.preventDefault(); speakEl(t.getAttribute('data-speak')); }
 });
 
 /* =========================================================
-   9. HOME
+   HOME
    ========================================================= */
 function renderHome(){
   if('speechSynthesis' in window) window.speechSynthesis.cancel();
   let html = `<div class="hero">
     <h1>Apprends <em>SQL</em> en jouant.</h1>
-    <p>Un vrai moteur SQL dans ton navigateur. Des quêtes, des boss, des mini-jeux, et la voix qui t'explique tout.</p>
+    <p>Un vrai moteur SQL dans ton navigateur. Carte, Arcade et Académie complète.</p>
   </div>`;
 
+  // Arcade
   html += `<div class="world clickable" onclick="renderArcade()">
     <div class="world-head">
       <div class="world-emoji">🎮</div>
-      <div>
-        <div class="world-title">Arcade</div>
-        <div class="world-desc">4 mini-jeux : Quiz, Chasse au Bug, Devine la Sortie, Speed Run</div>
-      </div>
+      <div><div class="world-title">Arcade</div>
+      <div class="world-desc">4 mini-jeux : Quiz, Chasse au Bug, Devine la Sortie, Speed Run</div></div>
       <div class="world-prog">Records<br><b>${Math.max(state.scores.quiz,state.scores.bug,state.scores.output)}</b></div>
-    </div>
-  </div>`;
+    </div></div>`;
 
+  // Académie
+  const acadDone = Object.keys(state.academy).length;
+  html += `<div class="world clickable" onclick="renderAcademy()">
+    <div class="world-head">
+      <div class="world-emoji">📚</div>
+      <div><div class="world-title">Académie</div>
+      <div class="world-desc">12 chapitres complets avec théorie et TP corrigés</div></div>
+      <div class="world-prog">TP faits<br><b>${acadDone}</b></div>
+    </div></div>`;
+
+  // Carte (jeu)
   CURRICULUM.forEach(world=>{
     const doneCount = world.lessons.filter(l=>lessonDone(l.id)).length;
     const pct = Math.round(doneCount/world.lessons.length*100);
     html += `<div class="world">
       <div class="world-head">
         <div class="world-emoji">${world.emoji}</div>
-        <div>
-          <div class="world-title">${world.title}</div>
-          <div class="world-desc">${world.desc}</div>
-        </div>
+        <div><div class="world-title">${world.title}</div>
+        <div class="world-desc">${world.desc}</div></div>
         <div class="world-prog"><b>${doneCount}/${world.lessons.length}</b><br>${pct}%</div>
       </div><div class="lessons">`;
-    world.lessons.forEach((lesson, i)=>{
-      const unlocked = i === 0 || lessonDone(world.lessons[i-1].id);
+    world.lessons.forEach((lesson,i)=>{
+      const unlocked = i===0 || lessonDone(world.lessons[i-1].id);
       const done = lessonDone(lesson.id);
       const stars = lessonStars(lesson.id);
-      const starStr = done ? '★'.repeat(stars) + '☆'.repeat(3-stars) : '☆☆☆';
+      const starStr = done ? '★'.repeat(stars)+'☆'.repeat(3-stars) : '☆☆☆';
       html += `<div class="lesson ${unlocked?'':'locked'} ${done?'done':''}"
                     onclick="${unlocked?`openLesson('${lesson.id}')`:''}">
-        <div class="lesson-idx">${unlocked? (done?'✓':'▶') : '🔒'}</div>
+        <div class="lesson-idx">${unlocked?(done?'✓':'▶'):'🔒'}</div>
         <div class="lesson-name">${lesson.title}</div>
         <div class="lesson-stars">${starStr}</div>
       </div>`;
@@ -1224,7 +1102,7 @@ function renderHome(){
   html += `</div></div>`;
 
   html += `<div style="text-align:center;margin-top:40px">
-    <button class="back" onclick="showSchema()" style="display:inline-flex">📋 Voir le schéma de la base</button>
+    <button class="back" onclick="showSchema()" style="display:inline-flex">📋 Schéma de la base</button>
   </div>`;
 
   app.innerHTML = html;
@@ -1232,7 +1110,7 @@ function renderHome(){
 }
 
 /* =========================================================
-   10. LESSON VIEW
+   LESSON VIEW
    ========================================================= */
 let current = {lessonId:null, idx:0, hintsUsed:false, attempts:0};
 
@@ -1240,47 +1118,38 @@ function openLesson(lessonId){
   current = {lessonId, idx:0, hintsUsed:false, attempts:0};
   renderLesson();
 }
-
 function renderLesson(){
   const lesson = findLesson(current.lessonId);
   const ex = lesson.exercises[current.idx];
   const total = lesson.exercises.length;
-
-  let dots = '';
+  let dots='';
   lesson.exercises.forEach((_,i)=>{
-    let cls = 'dot';
-    if(i === current.idx) cls += ' cur';
-    else if(state.ex[current.lessonId+':'+i] !== undefined) cls += ' ok';
+    let cls='dot';
+    if(i===current.idx) cls+=' cur';
+    else if(state.ex[current.lessonId+':'+i]!==undefined) cls+=' ok';
     dots += `<div class="${cls}"></div>`;
   });
-
   app.innerHTML = `
-    <button class="back" onclick="renderHome()">← Retour à la carte</button>
-
+    <button class="back" onclick="renderHome()">← Retour</button>
     <div class="theory">
       <button class="speak-fab" data-speak="#theory-text" title="Écouter">🔊</button>
-      <div id="theory-text">
-        ${lesson.theory}
+      <div id="theory-text">${lesson.theory}
         <p style="color:var(--muted);font-size:.8rem;margin-top:14px">
           Tables : <code>products</code>, <code>customers</code>, <code>orders</code>
-          — <a href="#" onclick="showSchema();return false;">voir le schéma</a>
-        </p>
-      </div>
+          — <a href="#" onclick="showSchema();return false;">schéma</a>
+        </p></div>
     </div>
-
     <div class="theory">
       <div class="ex-head">
         <strong>Exercice ${current.idx+1} / ${total}</strong>
         <div class="ex-dots">${dots}</div>
       </div>
       <div class="prompt" id="prompt-text">${ex.prompt}</div>
-      <button class="speak-fab" data-speak="#prompt-text" title="Écouter">🔊</button>
-
+      <button class="speak-fab" data-speak="#prompt-text">🔊</button>
       <div class="editor-wrap" style="margin-top:14px">
         <div class="lineno" id="lineno">1</div>
         <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" inputmode="text">${esc(ex.starter)}</textarea>
       </div>
-
       <div class="actions">
         <button class="btn btn-run" onclick="runOnly()">▶ Exécuter</button>
         <button class="btn btn-check" onclick="checkAnswer()">✓ Valider</button>
@@ -1289,186 +1158,244 @@ function renderLesson(){
       <div class="hintbox" id="hintbox"></div>
       <div class="feedback" id="feedback"></div>
       <div class="results" id="results"></div>
-    </div>
-  `;
-
-  const ta = document.getElementById('editor');
+    </div>`;
+  const ta=document.getElementById('editor');
   ta.focus();
   ta.addEventListener('input', updateLineNumbers);
   ta.addEventListener('keydown', e=>{
-    if(e.key === 'Tab'){
+    if(e.key==='Tab'){
       e.preventDefault();
-      const s = ta.selectionStart, epos = ta.selectionEnd;
-      ta.value = ta.value.slice(0,s) + '  ' + ta.value.slice(epos);
-      ta.selectionStart = ta.selectionEnd = s + 2;
+      const s=ta.selectionStart, ep=ta.selectionEnd;
+      ta.value = ta.value.slice(0,s)+'  '+ta.value.slice(ep);
+      ta.selectionStart = ta.selectionEnd = s+2;
       updateLineNumbers();
     }
-    if((e.ctrlKey||e.metaKey) && e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }
+    if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); checkAnswer(); }
   });
   updateLineNumbers();
   updateTopbar();
-  // auto-speak : ne fonctionne qu'après déverrouillage (1er geste)
-  // → pas critique, l'utilisateur peut toujours taper 🔊
   setTimeout(()=>{ if(state.tts && ttsUnlocked) speak(ex.prompt); }, 250);
 }
-
 function updateLineNumbers(){
-  const ta = document.getElementById('editor');
-  const ln = document.getElementById('lineno');
-  if(!ta || !ln) return;
-  const n = ta.value.split('\n').length;
-  ln.innerHTML = Array.from({length:n}, (_,i)=>i+1).join('<br>');
+  const ta=document.getElementById('editor'), ln=document.getElementById('lineno');
+  if(!ta||!ln) return;
+  const n=ta.value.split('\n').length;
+  ln.innerHTML = Array.from({length:n},(_,i)=>i+1).join('<br>');
 }
-
 function showHint(){
-  const l = findLesson(current.lessonId);
-  const ex = l.exercises[current.idx];
+  const l=findLesson(current.lessonId); const ex=l.exercises[current.idx];
   if(!ex.hint) return;
-  const box = document.getElementById('hintbox');
-  box.textContent = '💡 ' + ex.hint;
-  box.classList.add('show');
-  current.hintsUsed = true;
-  speak('Indice : ' + ex.hint);
+  const box=document.getElementById('hintbox');
+  box.textContent='💡 '+ex.hint; box.classList.add('show');
+  current.hintsUsed=true;
+  speak('Indice : '+ex.hint);
 }
-
 function renderResults(res){
-  const box = document.getElementById('results');
-  if(res.values.length === 0 && res.columns.length === 0){
-    box.innerHTML = `<div class="results-bar"><span>Aucune ligne retournée</span></div>`;
+  const box=document.getElementById('results');
+  if(res.values.length===0 && res.columns.length===0){
+    box.innerHTML=`<div class="results-bar"><span>Aucune ligne</span></div>`;
     box.classList.add('show'); return;
   }
-  const shown = res.values.slice(0, 50);
-  let html = `<div class="results-bar"><span>${res.values.length} ligne(s)</span>
-    ${res.values.length > 50 ? `<span>limité à 50</span>` : ''}</div>
+  const shown=res.values.slice(0,50);
+  let html=`<div class="results-bar"><span>${res.values.length} ligne(s)</span>
+    ${res.values.length>50?`<span>limité à 50</span>`:''}</div>
     <div class="table-scroll"><table><thead><tr>`;
   res.columns.forEach(c=> html += `<th>${esc(c)}</th>`);
   html += `</tr></thead><tbody>`;
   shown.forEach(row=>{
     html += '<tr>';
     row.forEach(v=>{
-      const isNull = v === null || v === undefined;
+      const isNull = v===null || v===undefined;
       html += `<td class="${isNull?'null':''}">${isNull?'NULL':esc(normVal(v).replace('\u0000NULL','NULL'))}</td>`;
     });
     html += '</tr>';
   });
   html += `</tbody></table></div>`;
-  box.innerHTML = html;
-  box.classList.add('show');
+  box.innerHTML=html; box.classList.add('show');
 }
-
 function runOnly(){
-  const sql = document.getElementById('editor').value.trim();
-  const fb = document.getElementById('feedback');
-  const box = document.getElementById('results');
-  fb.className = 'feedback'; box.classList.remove('show');
-  if(!sql){ showFb('err', "❌ Écris une requête SQL avant d'exécuter."); return; }
+  const sql=document.getElementById('editor').value.trim();
+  const fb=document.getElementById('feedback'), box=document.getElementById('results');
+  fb.className='feedback'; box.classList.remove('show');
+  if(!sql){ showFb('err',"❌ Écris une requête d'abord."); return; }
   try{
-    const res = execSQL(sql);
+    const res=execSQL(sql);
     renderResults(res);
-    if(res.values.length === 0) showFb('info', "ℹ️ La requête s'exécute mais ne renvoie aucune ligne.");
-  }catch(err){ showFb('err', '❌ Erreur SQL : ' + err.message); }
+    if(!res.values.length) showFb('info',"ℹ️ Aucune ligne retournée.");
+  }catch(err){ showFb('err','❌ Erreur SQL : '+err.message); }
 }
-function showFb(type, msg){
-  const fb = document.getElementById('feedback');
-  fb.className = 'feedback show ' + type;
-  fb.innerHTML = msg;
+function showFb(type,msg){
+  const fb=document.getElementById('feedback');
+  fb.className='feedback show '+type; fb.innerHTML=msg;
 }
-
 function checkAnswer(){
-  const sql = document.getElementById('editor').value.trim();
-  const l = findLesson(current.lessonId);
-  const ex = l.exercises[current.idx];
-  const fb = document.getElementById('feedback');
-  fb.className = 'feedback';
-  if(!sql){ showFb('err', "❌ Écris une requête SQL d'abord."); return; }
-
+  const sql=document.getElementById('editor').value.trim();
+  const l=findLesson(current.lessonId); const ex=l.exercises[current.idx];
+  const fb=document.getElementById('feedback'); fb.className='feedback';
+  if(!sql){ showFb('err',"❌ Écris une requête d'abord."); return; }
   let userRes;
-  try{ userRes = execSQL(sql); }
-  catch(err){ showFb('err', '❌ Erreur SQL : ' + err.message); return; }
-
+  try{ userRes=execSQL(sql); }
+  catch(err){ showFb('err','❌ Erreur SQL : '+err.message); return; }
   renderResults(userRes);
   current.attempts++;
   const userNorm = normalize(userRes, !!ex.ordered);
   const expNorm = getExpected(current.lessonId, current.idx);
-
   if(resultsEqual(userNorm, expNorm)){
-    const stars = current.hintsUsed ? (current.attempts === 1 ? 2 : 1) : (current.attempts === 1 ? 3 : 2);
-    const key = current.lessonId + ':' + current.idx;
-    const already = state.ex[key] !== undefined;
+    const stars = current.hintsUsed ? (current.attempts===1?2:1) : (current.attempts===1?3:2);
+    const key = current.lessonId+':'+current.idx;
+    const already = state.ex[key]!==undefined;
     if(!already){
-      state.ex[key] = stars;
-      state.xp += 10 + stars * 5;
-      touchStreak();
-      checkBadges();
-      saveState();
-      updateTopbar();
+      state.ex[key]=stars;
+      state.xp += 10 + stars*5;
+      touchStreak(); checkBadges(); saveState(); updateTopbar();
     }
-    showFb('ok', `🎉 <b>Bravo !</b> ${'★'.repeat(stars)}${'☆'.repeat(3-stars)} — +${already?0:10+stars*5} XP`);
-    speak(current.attempts === 1 ? 'Bravo, parfait !' : 'Bravo !');
-    const actions = document.querySelector('.actions');
-    actions.innerHTML = `<button class="btn btn-next" onclick="nextExercise()">Continuer →</button>`;
-    document.getElementById('editor').disabled = true;
-    document.getElementById('editor').style.opacity = '.65';
+    showFb('ok',`🎉 <b>Bravo !</b> ${'★'.repeat(stars)}${'☆'.repeat(3-stars)} — +${already?0:10+stars*5} XP`);
+    speak(current.attempts===1?'Bravo, parfait !':'Bravo !');
+    document.querySelector('.actions').innerHTML = `<button class="btn btn-next" onclick="nextExercise()">Continuer →</button>`;
+    const ta=document.getElementById('editor'); ta.disabled=true; ta.style.opacity='.65';
   }else{
-    let msg = "❌ Ce n'est pas encore ça.";
-    if(userNorm.cols !== expNorm.cols) msg += ` Tu renvoies <b>${userNorm.cols}</b> colonne(s), il en faut <b>${expNorm.cols}</b>.`;
-    else if(userNorm.rows.length !== expNorm.rows.length) msg += ` Tu renvoies <b>${userNorm.rows.length}</b> ligne(s), il en faut <b>${expNorm.rows.length}</b>.`;
-    else msg += ' Même nombre de lignes, mais certaines valeurs diffèrent.';
-    showFb('err', msg + '<br><span style="opacity:.75;font-size:.85em">Compare ton résultat au résultat attendu.</span>');
+    let msg="❌ Ce n'est pas encore ça.";
+    if(userNorm.cols!==expNorm.cols) msg += ` Tu renvoies ${userNorm.cols} colonne(s), il en faut ${expNorm.cols}.`;
+    else if(userNorm.rows.length!==expNorm.rows.length) msg += ` Tu renvoies ${userNorm.rows.length} ligne(s), il en faut ${expNorm.rows.length}.`;
+    else msg += ' Même nombre de lignes, valeurs différentes.';
+    showFb('err', msg);
     speak("Ce n'est pas encore ça. Réessaie.");
   }
 }
-
 function nextExercise(){
-  const l = findLesson(current.lessonId);
-  if(current.idx < l.exercises.length - 1){
-    current.idx++; current.hintsUsed = false; current.attempts = 0;
+  const l=findLesson(current.lessonId);
+  if(current.idx < l.exercises.length-1){
+    current.idx++; current.hintsUsed=false; current.attempts=0;
     renderLesson();
   }else finishLesson();
 }
-
 function finishLesson(){
-  const l = findLesson(current.lessonId);
-  const stars = lessonStars(current.lessonId);
-  const prev = state.lessons[l.id];
-  if(!prev || prev.stars < stars){
-    state.lessons[l.id] = {stars, completedAt: Date.now()};
-    saveState();
-  }
+  const l=findLesson(current.lessonId);
+  const stars=lessonStars(current.lessonId);
+  const prev=state.lessons[l.id];
+  if(!prev || prev.stars < stars){ state.lessons[l.id]={stars,completedAt:Date.now()}; saveState(); }
   checkBadges();
   app.innerHTML = `<div class="complete">
     <div class="big">🏁</div>
     <h2>Leçon terminée !</h2>
     <div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
     <p>${l.title}</p>
-    <button class="btn btn-check" onclick="renderHome()">Retour à la carte</button>
+    <button class="btn btn-check" onclick="renderHome()">Retour</button>
   </div>`;
   speak('Leçon terminée ! Félicitations.');
   updateTopbar();
 }
 
 /* =========================================================
-   11. ARCADE
+   ACADEMY
    ========================================================= */
-let game = null;
+function renderAcademy(){
+  if('speechSynthesis' in window) window.speechSynthesis.cancel();
+  let html = `<button class="back" onclick="renderHome()">← Carte</button>
+    <div class="hero" style="margin-bottom:24px">
+      <h1>📚 <em>Académie</em></h1>
+      <p>12 chapitres pour tout comprendre, avec TP et solutions masquées.</p>
+    </div>`;
+  ACADEMY.forEach(ch=>{
+    const done = chapterTpDone(ch.id);
+    const total = ch.tps.length;
+    const pct = Math.round(done/total*100);
+    html += `<div class="chapter-card" onclick="openChapter('${ch.id}')">
+      <div class="chapter-head">
+        <div class="chapter-num">${ch.emoji}</div>
+        <div class="chapter-info">
+          <div class="chapter-title">${ch.title}</div>
+          <div class="chapter-summary">${ch.summary}</div>
+        </div>
+        <div class="chapter-progress">${done}/${total}<br><span style="color:var(--muted);font-weight:400">${pct}%</span></div>
+      </div>
+    </div>`;
+  });
+  app.innerHTML = html;
+  updateTopbar();
+}
+function openChapter(chId){
+  const ch = ACADEMY.find(c=>c.id===chId);
+  if(!ch) return;
+  let html = `<button class="back" onclick="renderAcademy()">← Chapitres</button>
+    <div class="theory">
+      <button class="speak-fab" data-speak="#ch-theory" title="Écouter">🔊</button>
+      <div id="ch-theory">${ch.theory}</div>
+    </div>
+    <div class="theory">
+      <h3>✏️ Travaux pratiques</h3>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Fais chaque TP, puis clique "Solution" pour vérifier.</p>
+      <div id="tp-list">`;
+  ch.tps.forEach((tp,i)=>{
+    const tpKey = ch.id+':'+i;
+    const done = !!state.academy[tpKey];
+    html += `<div class="tp-item ${done?'done':''}" id="tp-${tpKey}">
+      <div class="tp-head">
+        <div class="tp-check ${done?'done':''}" onclick="toggleTpDone('${tpKey}')" title="Marquer comme fait">✓</div>
+        <div class="tp-prompt"><strong>TP ${i+1}.</strong> ${tp.prompt}</div>
+      </div>
+      <div class="tp-actions">
+        <button class="btn btn-hint" onclick="toggleTpHint('${tpKey}')">💡 Indice</button>
+        <button class="btn btn-run" onclick="toggleTpSolution('${tpKey}')">👁 Solution</button>
+      </div>
+      <div class="tp-hintbox" id="hint-${tpKey}">💡 ${esc(tp.hint||'')}</div>
+      <div class="tp-solution" id="sol-${tpKey}">${esc(tp.solution)}</div>
+    </div>`;
+  });
+  html += `</div></div>`;
+  app.innerHTML = html;
+  updateTopbar();
+  setTimeout(()=>{ if(state.tts && ttsUnlocked) speak(ch.title + '. ' + ch.summary); }, 300);
+}
+function toggleTpDone(tpKey){
+  if(state.academy[tpKey]){
+    delete state.academy[tpKey];
+    state.xp = Math.max(0, state.xp - 15);
+  }else{
+    state.academy[tpKey] = true;
+    state.xp += 15;
+    touchStreak();
+    checkBadges();
+    toast('✅ +15 XP');
+  }
+  saveState();
+  const el = document.getElementById('tp-'+tpKey);
+  if(el){
+    const done = !!state.academy[tpKey];
+    el.classList.toggle('done', done);
+    const check = el.querySelector('.tp-check');
+    if(check) check.classList.toggle('done', done);
+  }
+  updateTopbar();
+}
+function toggleTpHint(tpKey){
+  const el = document.getElementById('hint-'+tpKey);
+  if(el) el.classList.toggle('show');
+}
+function toggleTpSolution(tpKey){
+  const el = document.getElementById('sol-'+tpKey);
+  if(el) el.classList.toggle('show');
+}
 
+/* =========================================================
+   ARCADE
+   ========================================================= */
+let game=null;
 function renderArcade(){
   if('speechSynthesis' in window) window.speechSynthesis.cancel();
   let html = `<button class="back" onclick="renderHome()">← Carte</button>
     <div class="hero" style="margin-bottom:24px">
       <h1>🎮 <em>Arcade</em></h1>
-      <p>Quatre mini-jeux pour t'entraîner. Les questions sont lues à voix haute.</p>
+      <p>Quatre mini-jeux. Questions lues à voix haute.</p>
     </div>`;
-  Object.entries(ARCADE).forEach(([id, g])=>{
-    const best = state.scores[id] || 0;
-    const isTime = id === 'speed';
+  Object.entries(ARCADE).forEach(([id,g])=>{
+    const best = state.scores[id]||0;
+    const isTime = id==='speed';
     html += `<div class="world">
       <div class="world-head">
         <div class="world-emoji">${g.emoji}</div>
-        <div>
-          <div class="world-title">${g.name}</div>
-          <div class="world-desc">${g.desc}</div>
-        </div>
+        <div><div class="world-title">${g.name}</div>
+        <div class="world-desc">${g.desc}</div></div>
         <div class="world-prog">Record<br><b>${best}${isTime?'':'/'+g.data.length}</b></div>
       </div>
       <button class="btn btn-check" onclick="startGame('${id}')" style="margin-top:16px;width:100%">Jouer →</button>
@@ -1477,186 +1404,153 @@ function renderArcade(){
   app.innerHTML = html;
   updateTopbar();
 }
-
 function startGame(id){
-  if(id === 'speed'){
-    game = {type:'speed', id, score:0, idx:0, total:0, pool:shuffle([...ARCADE.speed.data]), timeLeft:60, answered:false};
+  if(id==='speed'){
+    game = {type:'speed',id,score:0,idx:0,pool:shuffle([...ARCADE.speed.data]),timeLeft:60,answered:false};
     renderSpeedGame();
     game.timer = setInterval(()=>{
       game.timeLeft--;
-      if(game.timeLeft <= 0) endGame();
-      else if(game.timeLeft <= 10) updateSpeedTimer();
+      if(game.timeLeft<=0) endGame();
+      else if(game.timeLeft<=10) updateSpeedTimer();
     }, 1000);
   }else{
-    game = {type:id, id, score:0, idx:0, total:ARCADE[id].data.length, answered:false};
+    game = {type:id,id,score:0,idx:0,total:ARCADE[id].data.length,answered:false};
     renderArcadeQuestion();
   }
 }
-
-function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function renderArcadeQuestion(){
   const g = ARCADE[game.id];
   const q = g.data[game.idx];
   game.answered = false;
-
-  let dots = '';
+  let dots='';
   g.data.forEach((_,i)=>{
-    let cls = 'dot';
-    if(i === game.idx) cls += ' cur';
-    else if(i < game.idx) cls += ' ok';
-    dots += `<div class="${cls}"></div>`;
+    let cls='dot';
+    if(i===game.idx) cls+=' cur';
+    else if(i<game.idx) cls+=' ok';
+    dots+=`<div class="${cls}"></div>`;
   });
-
   const qText = q.q || "Quel est le résultat de cette requête ?";
   const qBody = q.sql ? `<div class="quiz-sql" id="quiz-sql">${esc(q.sql)}</div>` : '';
-
   app.innerHTML = `<button class="back" onclick="quitGame()">← Arcade</button>
     <div class="theory">
-      <div class="ex-head">
-        <strong>${game.idx+1} / ${g.data.length}</strong>
-        <div class="ex-dots">${dots}</div>
-      </div>
+      <div class="ex-head"><strong>${game.idx+1} / ${g.data.length}</strong>
+      <div class="ex-dots">${dots}</div></div>
       <div class="prompt" id="qtext">${esc(qText)}</div>
-      <button class="speak-fab" data-speak="#full-q" title="Écouter">🔊</button>
-      <div id="full-q" style="display:none">${esc(qText)} ${q.sql ? '. Requête : ' + esc(q.sql) : ''}</div>
+      <button class="speak-fab" data-speak="#full-q">🔊</button>
+      <div id="full-q" style="display:none">${esc(qText)} ${q.sql?'. Requête : '+esc(q.sql):''}</div>
       ${qBody}
       <div id="opts">${q.opts.map((o,i)=>`<button class="opt-btn" onclick="answerArcade(${i})">${String.fromCharCode(65+i)}. ${esc(o)}</button>`).join('')}</div>
       <div class="feedback" id="arcade-fb"></div>
     </div>`;
   updateTopbar();
-  setTimeout(()=>{ if(state.tts && ttsUnlocked) speak((qText) + (q.sql ? '. ' + q.sql : '')); }, 200);
+  setTimeout(()=>{ if(state.tts && ttsUnlocked) speak(qText + (q.sql?'. '+q.sql:'')); }, 200);
 }
-
 function answerArcade(pick){
   if(game.answered) return;
-  game.answered = true;
-  const g = ARCADE[game.id];
-  const q = g.data[game.idx];
-  const btns = document.querySelectorAll('.opt-btn');
-  const fb = document.getElementById('arcade-fb');
-
+  game.answered=true;
+  const g = ARCADE[game.id], q = g.data[game.idx];
+  const btns = document.querySelectorAll('.opt-btn'), fb = document.getElementById('arcade-fb');
   btns.forEach((b,i)=>{
-    b.disabled = true;
-    if(i === q.a) b.classList.add('correct');
-    if(i === pick && pick !== q.a) b.classList.add('wrong');
+    b.disabled=true;
+    if(i===q.a) b.classList.add('correct');
+    if(i===pick && pick!==q.a) b.classList.add('wrong');
   });
-
-  if(pick === q.a){
+  if(pick===q.a){
     game.score++;
     state.xp += g.xpPer;
-    fb.className = 'feedback show ok';
+    fb.className='feedback show ok';
     fb.innerHTML = `✅ <b>Bonne réponse !</b> +${g.xpPer} XP<br><span style="opacity:.85;font-size:.88em">${esc(q.exp)}</span>`;
-    speak('Bonne réponse. ' + q.exp);
+    speak('Bonne réponse. '+q.exp);
   }else{
-    fb.className = 'feedback show err';
+    fb.className='feedback show err';
     fb.innerHTML = `❌ La bonne réponse était <b>${String.fromCharCode(65+q.a)}</b>.<br><span style="opacity:.85;font-size:.88em">${esc(q.exp)}</span>`;
-    speak('Raté. La bonne réponse était ' + q.opts[q.a] + '. ' + q.exp);
+    speak('Raté. La bonne réponse était '+q.opts[q.a]+'. '+q.exp);
   }
-
-  saveState();
-  updateTopbar();
+  saveState(); updateTopbar();
   setTimeout(()=>{
     game.idx++;
     if(game.idx >= g.data.length) endGame();
     else renderArcadeQuestion();
   }, 2400);
 }
-
 function renderSpeedGame(){
   const q = game.pool[0];
   const qText = q.q || "Quel est le résultat ?";
   const qBody = q.sql ? `<div class="quiz-sql">${esc(q.sql)}</div>` : '';
   app.innerHTML = `<button class="back" onclick="quitGame()">← Arcade</button>
     <div class="theory">
-      <div class="ex-head">
-        <strong>Score : ${game.score}</strong>
-        <div class="timer" id="timer">⏱ ${game.timeLeft}s</div>
-      </div>
+      <div class="ex-head"><strong>Score : ${game.score}</strong>
+      <div class="timer" id="timer">⏱ ${game.timeLeft}s</div></div>
       <div class="prompt">${esc(qText)}</div>
-      <div id="full-q" style="display:none">${esc(qText)} ${q.sql ? '. Requête : ' + esc(q.sql) : ''}</div>
+      <div id="full-q" style="display:none">${esc(qText)} ${q.sql?'. '+esc(q.sql):''}</div>
       ${qBody}
       <div id="opts">${q.opts.map((o,i)=>`<button class="opt-btn" onclick="answerSpeed(${i})">${String.fromCharCode(65+i)}. ${esc(o)}</button>`).join('')}</div>
       <div class="feedback" id="arcade-fb"></div>
     </div>`;
   updateTopbar();
-  setTimeout(()=>{ if(state.tts && ttsUnlocked) speak((qText) + (q.sql ? '. ' + q.sql : ''), {rate:1.1}); }, 150);
+  setTimeout(()=>{ if(state.tts && ttsUnlocked) speak(qText + (q.sql?'. '+q.sql:''), {rate:1.1}); }, 150);
 }
-
 function updateSpeedTimer(){
   const t = document.getElementById('timer');
-  if(t){
-    t.textContent = '⏱ ' + game.timeLeft + 's';
-    if(game.timeLeft <= 10) t.classList.add('warn');
-  }
+  if(t){ t.textContent = '⏱ '+game.timeLeft+'s'; if(game.timeLeft<=10) t.classList.add('warn'); }
 }
-
 function answerSpeed(pick){
   if(!game || game.answered) return;
-  game.answered = true;
+  game.answered=true;
   const q = game.pool[0];
-  const btns = document.querySelectorAll('.opt-btn');
-  const fb = document.getElementById('arcade-fb');
+  const btns = document.querySelectorAll('.opt-btn'), fb = document.getElementById('arcade-fb');
   btns.forEach((b,i)=>{
-    b.disabled = true;
-    if(i === q.a) b.classList.add('correct');
-    if(i === pick && pick !== q.a) b.classList.add('wrong');
+    b.disabled=true;
+    if(i===q.a) b.classList.add('correct');
+    if(i===pick && pick!==q.a) b.classList.add('wrong');
   });
-  if(pick === q.a){
+  if(pick===q.a){
     game.score++;
     state.xp += ARCADE.speed.xpPer;
-    fb.className = 'feedback show ok';
-    fb.textContent = `✅ +${ARCADE.speed.xpPer} XP`;
+    fb.className='feedback show ok'; fb.textContent = `✅ +${ARCADE.speed.xpPer} XP`;
   }else{
-    fb.className = 'feedback show err';
-    fb.textContent = `❌ Bonne réponse : ${String.fromCharCode(65+q.a)}`;
+    fb.className='feedback show err'; fb.textContent = `❌ Bonne réponse : ${String.fromCharCode(65+q.a)}`;
   }
-  updateTopbar();
-  saveState();
+  updateTopbar(); saveState();
   setTimeout(()=>{
-    if(game.timeLeft <= 0) return;
+    if(game.timeLeft<=0) return;
     game.pool.shift();
-    if(game.pool.length === 0) game.pool = shuffle([...ARCADE.speed.data]);
-    game.answered = false;
+    if(!game.pool.length) game.pool = shuffle([...ARCADE.speed.data]);
+    game.answered=false;
     renderSpeedGame();
   }, 700);
 }
-
 function endGame(){
   if(!game) return;
-  if(game.timer){ clearInterval(game.timer); game.timer = null; }
+  if(game.timer){ clearInterval(game.timer); game.timer=null; }
   const g = ARCADE[game.id];
-  const best = state.scores[game.id] || 0;
+  const best = state.scores[game.id]||0;
   const newBest = game.score > best;
-  if(newBest){
-    state.scores[game.id] = game.score;
-    saveState();
-  }
+  if(newBest){ state.scores[game.id] = game.score; saveState(); }
   checkBadges();
-  const max = game.id === 'speed' ? '∞' : g.data.length;
-  const pct = game.id === 'speed' ? Math.min(100, game.score*5) : Math.round(game.score/g.data.length*100);
+  const max = game.id==='speed' ? '∞' : g.data.length;
+  const pct = game.id==='speed' ? Math.min(100, game.score*5) : Math.round(game.score/g.data.length*100);
   app.innerHTML = `<div class="complete">
-    <div class="big">${game.score >= (game.id==='speed'?15:g.data.length) ? '🏆' : game.score > 0 ? '🎉' : '💪'}</div>
+    <div class="big">${game.score>0?'🎉':'💪'}</div>
     <h2>${g.name} terminé !</h2>
     <div class="score-big">${game.score} / ${max}</div>
     <p>${pct}% de réussite${newBest?' · <b style="color:var(--gold)">🎯 Nouveau record !</b>':''}</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
       <button class="btn btn-check" onclick="startGame('${game.id}')">Rejouer</button>
       <button class="btn btn-run" onclick="renderArcade()">← Arcade</button>
-    </div>
-  </div>`;
-  speak(`Partie terminée. Score : ${game.score} sur ${max}. ${newBest ? 'Nouveau record !' : ''}`);
+    </div></div>`;
+  speak(`Partie terminée. Score ${game.score} sur ${max}.`);
   updateTopbar();
 }
-
 function quitGame(){
-  if(game && game.timer){ clearInterval(game.timer); game.timer = null; }
+  if(game && game.timer){ clearInterval(game.timer); game.timer=null; }
   game = null;
   renderArcade();
 }
 
 /* =========================================================
-   12. BADGES / MODAL / RESET
+   BADGES / SCHEMA / RESET
    ========================================================= */
 function checkBadges(){
   BADGES.forEach(b=>{
@@ -1667,7 +1561,6 @@ function checkBadges(){
   });
   saveState();
 }
-
 function showSchema(){
   const schema = `CREATE TABLE products (
   id INTEGER PRIMARY KEY, name TEXT, category TEXT, price REAL, stock INTEGER
@@ -1681,18 +1574,17 @@ CREATE TABLE orders (
 );`;
   const div = document.createElement('div');
   div.className = 'modal-bg';
-  div.onclick = e => { if(e.target === div) div.remove(); };
+  div.onclick = e => { if(e.target===div) div.remove(); };
   div.innerHTML = `<div class="modal">
-    <h3>📋 Schéma de la base</h3>
+    <h3>📋 Schéma</h3>
     <pre>${esc(schema)}</pre>
     <p style="color:var(--muted);font-size:.85rem">15 produits · 13 clients · 30 commandes</p>
     <button class="btn btn-run" onclick="this.closest('.modal-bg').remove()">Fermer</button>
   </div>`;
   document.body.appendChild(div);
 }
-
 function resetProgress(){
-  if(!confirm('Effacer toute ta progression ? (leçons, badges, records arcade)')) return;
+  if(!confirm('Effacer toute ta progression ?')) return;
   localStorage.removeItem(SAVE_KEY);
   state = loadState();
   expectedCache = {};
@@ -1701,7 +1593,7 @@ function resetProgress(){
 }
 
 /* =========================================================
-   13. BOOT
+   BOOT
    ========================================================= */
 (async function boot(){
   initTTS();
@@ -1711,7 +1603,7 @@ function resetProgress(){
       try{ getExpected(l.id, i); }catch(e){ console.error('Solution invalide', l.id, i, e); }
     })));
     document.getElementById('loader').style.display = 'none';
-    updateTTSBtn();
+    updateTopbar();
     renderHome();
   }catch(err){
     document.getElementById('loader').innerHTML =
